@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CAP Theorem — Consistency, Availability & Partition Tolerance</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">📚 System Design</div>
+        <ul class="nav-links">
+          <li><a href="lec1.html">1. Intro & MVC</a></li>
+          <li><a href="lec2.html">2. Core Concepts</a></li>
+          <li><a href="lec3.html">3. Scaling to Millions</a></li>
+          <li><a href="lec4.html">4. Scaling Deep Dive</a></li>
+          <li><a href="lec5.html">5. Global Scaling</a></li>
+          <li class="active"><a href="lec6.html">6. CAP Theorem</a></li>
+          <li><a href="lec7.html">7. Replication & Sharding</a></li>
+          <li><a href="lec8.html">8. NoSQL Deep Dive</a></li>
+        </ul>
+      </nav>
+
+      <div class="content-wrapper">
+        <main class="content">
+          <div class="topic-header">
+            <span class="tag">Lecture 6</span>
+            <h1>CAP Theorem</h1>
+            <p class="subtitle">
+              Consistency, Availability & Partition Tolerance — the fundamental
+              tradeoff in distributed databases
+            </p>
+          </div>
+
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                A fundamental principle describing the
+                <strong
+                  >inherent tradeoffs in distributed database systems</strong
+                >.
+              </li>
+              <li>
+                At first it seems complex, but the practical takeaway is simple:
+                <em>you can't have everything — you have to choose.</em>
+              </li>
+              <li>
+                Only applies to <strong>distributed database systems</strong> —
+                i.e., databases with multiple nodes.
+              </li>
+              <li>
+                On a single-node DB, these tradeoffs don't exist — you always
+                have the latest data. The problem arises when multiple nodes
+                need to stay in sync.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>1. The Three Letters: C, A, P</h2>
+
+            <h3>C — Consistency</h3>
+            <ul>
+              <li>
+                <strong>Every read returns the most up-to-date data.</strong>
+              </li>
+              <li>
+                If you write to Node 1, a subsequent read from Node 2 must
+                return that same updated value.
+              </li>
+              <li>
+                All nodes serve <em>identical, synchronized data</em> at all
+                times.
+              </li>
+              <li>
+                This is <strong>strong consistency</strong> — there is never a
+                moment where two nodes have different data.
+              </li>
+            </ul>
+
+            <h3>A — Availability</h3>
+            <ul>
+              <li>
+                <strong
+                  >Every request gets a response — no errors, no
+                  timeouts.</strong
+                >
+              </li>
+              <li>The system always responds to requests.</li>
+              <li>
+                It doesn't guarantee the data is the most recent — just that
+                <em>some data is returned</em>.
+              </li>
+            </ul>
+
+            <h3>P — Partition Tolerance</h3>
+            <ul>
+              <li>
+                <strong
+                  >The system continues to function even when communication
+                  between nodes fails.</strong
+                >
+              </li>
+              <li>
+                A <strong>network partition</strong> = a communication failure
+                between nodes (broken link, dropped packets, network outage).
+              </li>
+              <li>
+                Nodes can't talk to each other → they fall out of sync.
+                Partition tolerance means the system
+                <em>keeps running despite this</em>.
+              </li>
+              <li>
+                <strong>This is not optional</strong> — network partitions are
+                inevitable in any real distributed system.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Key Insight</span>
+              Since network partitions WILL happen, P is not a choice you make —
+              it's a requirement. This is why the real decision always comes
+              down to C vs. A.
+            </div>
+          </section>
+
+          <section>
+            <h2>2. The Core Conflict</h2>
+            <p>
+              Imagine a 3-node cluster and a partition happens — Node 3 can no
+              longer communicate with Nodes 1 and 2. Node 3 has outdated data. A
+              client reads from Node 3. What do you do?
+            </p>
+
+            <ul>
+              <li>
+                <strong>Return outdated data</strong> — client gets a response,
+                but it may be stale. Preserves <em>Availability</em> ✅, breaks
+                <em>Consistency</em> ❌.
+              </li>
+              <li>
+                <strong>Return an error</strong> — client gets no data, but you
+                never lie about state. Preserves <em>Consistency</em> ✅, breaks
+                <em>Availability</em> ❌.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">The Tradeoff</span>
+              You can't do both. If you want to always respond → you might serve
+              stale data. If you want to always serve fresh data → you might
+              have to go offline. This is the CAP tradeoff.
+            </div>
+          </section>
+
+          <section>
+            <h2>3. The Three Combinations</h2>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>AP — Available + Partition Tolerant</h3>
+                <p>
+                  Stays available during partition. May return stale data. Nodes
+                  eventually sync when partition heals.
+                </p>
+                <p class="example">Eventual Consistency</p>
+                <p class="example">Cassandra, DynamoDB, CouchDB</p>
+              </div>
+              <div class="tier-card">
+                <h3>CP — Consistent + Partition Tolerant</h3>
+                <p>
+                  Goes offline during partition rather than serve stale data.
+                  Every read returns the most recent write.
+                </p>
+                <p class="example">Strong Consistency</p>
+                <p class="example">HBase, Zookeeper, MongoDB</p>
+              </div>
+              <div class="tier-card">
+                <h3>CA — Consistent + Available</h3>
+                <p>
+                  No partition tolerance. Theoretical in distributed systems —
+                  only achievable on a single-node setup.
+                </p>
+                <p class="example">Not a real distributed choice</p>
+                <p class="example">PostgreSQL / MySQL (single node)</p>
+              </div>
+            </div>
+
+            <h3>AP — Available + Partition Tolerant (Detailed)</h3>
+            <ul>
+              <li>
+                System <strong>stays available</strong> even during a partition
+                — reads may return stale data temporarily.
+              </li>
+              <li>
+                Nodes <strong>eventually sync</strong> when the partition heals
+                → this is called <em>eventual consistency</em>.
+              </li>
+              <li>
+                <strong>Best for:</strong> non-critical apps where stale data is
+                acceptable — blogs, social media feeds, product catalogs, news
+                feeds, shopping carts.
+              </li>
+            </ul>
+
+            <h3>CP — Consistent + Partition Tolerant (Detailed)</h3>
+            <ul>
+              <li>
+                System <strong>prioritizes correctness</strong> over
+                availability.
+              </li>
+              <li>
+                During a partition, goes <em>offline (unavailable)</em> rather
+                than serve stale data.
+              </li>
+              <li>
+                <strong>Best for:</strong> apps where data accuracy is critical
+                — being wrong is worse than being down.
+              </li>
+              <li>
+                Banking, finance, military systems, medical records, inventory
+                systems (can't sell the same item twice).
+              </li>
+            </ul>
+
+            <h3>CA — Consistent + Available (Detailed)</h3>
+            <ul>
+              <li>
+                Every read returns the most recent data AND every request gets a
+                response — because there is <strong>never a partition</strong>.
+              </li>
+              <li>
+                <strong>Theoretical in distributed systems</strong> — in
+                practice, you can't guarantee nodes will never lose
+                communication.
+              </li>
+              <li>
+                Only really achievable on a
+                <strong>single-node system</strong> (not distributed).
+              </li>
+              <li>
+                Worth knowing conceptually but <em>not a real choice</em> in
+                distributed architecture.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>4. Decision Framework</h2>
+            <p>Ask yourself one key question:</p>
+
+            <div class="callout">
+              <span class="callout-label">The Question</span>
+              "If a network partition happens and nodes go out of sync, do I
+              serve the request with potentially outdated data — or do I refuse
+              to serve it and go offline?"
+            </div>
+
+            <ul>
+              <li>
+                <strong>Serve it — stale response is fine</strong> → choose
+                <em>AP</em>.
+              </li>
+              <li>
+                <strong>Refuse it — stale data is unacceptable</strong> → choose
+                <em>CP</em>.
+              </li>
+            </ul>
+
+            <h3>AP vs. CP Quick Reference</h3>
+            <ul>
+              <li>
+                <strong>AP during partition:</strong> returns (possibly stale)
+                data. Consistency type: Eventual. Always up. Use case: social
+                media, blogs, feeds.
+              </li>
+              <li>
+                <strong>CP during partition:</strong> returns error / goes
+                offline. Consistency type: Strong. May go down. Use case:
+                finance, banking, military.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Mental Anchor</span>
+              Finance → CP. Social media → AP. Use this as your default starting
+              point.
+            </div>
+          </section>
+
+          <section>
+            <h2>5. Advanced: Quorums & Partial Consistency</h2>
+            <ul>
+              <li>
+                It doesn't always have to be all-or-nothing — a more nuanced
+                approach uses <strong>quorums</strong>.
+              </li>
+              <li>
+                Instead of requiring ALL nodes to agree (strong) or just ONE
+                node (eventual), require a <strong>majority (quorum)</strong> to
+                agree.
+              </li>
+              <li>
+                Example: 3-node cluster → require 2/3 nodes to confirm a write
+                before acknowledging it.
+              </li>
+              <li>
+                Gives you a tunable <strong>middle ground</strong> between full
+                consistency and full availability.
+              </li>
+              <li>
+                Related concepts: <em>database consensus algorithms</em> —
+                Paxos, Raft.
+              </li>
+              <li>Covered in depth in future database clustering videos.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>6. Real-World Database Examples</h2>
+            <ul>
+              <li>
+                <strong>PostgreSQL (single node)</strong> — CA. No distribution
+                → no partition concern.
+              </li>
+              <li><strong>MySQL (single node)</strong> — CA. Same as above.</li>
+              <li>
+                <strong>Cassandra</strong> — AP. Tunable consistency; designed
+                for availability.
+              </li>
+              <li>
+                <strong>DynamoDB</strong> — AP (default). Can be configured for
+                stronger consistency.
+              </li>
+              <li><strong>HBase</strong> — CP. Consistency-first design.</li>
+              <li>
+                <strong>Zookeeper</strong> — CP. Used for distributed
+                coordination.
+              </li>
+              <li>
+                <strong>MongoDB</strong> — CP (default). Strong consistency with
+                replica sets.
+              </li>
+              <li>
+                <strong>CouchDB</strong> — AP. Eventual consistency with
+                conflict resolution.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>7. CAP vs. ACID — Don't Confuse Them</h2>
+            <ul>
+              <li>
+                <strong>CAP Theorem</strong> — applies to distributed database
+                systems at the network/architecture level. "Consistency" means
+                all nodes have the same data.
+              </li>
+              <li>
+                <strong>ACID</strong> — applies to individual database
+                transactions at the query level. "Consistency" means the DB
+                moves from one valid state to another.
+              </li>
+              <li>
+                These are <em>separate concepts</em> — same word, completely
+                different meanings in each context.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Key Takeaways</h2>
+            <ul>
+              <li>
+                <strong>P is not optional</strong> — network partitions always
+                happen; you always need partition tolerance.
+              </li>
+              <li>
+                <strong>The real choice is C vs. A</strong> — do you prioritize
+                correctness or uptime during a failure?
+              </li>
+              <li>
+                <strong>CP = error on partition</strong> — system goes down
+                rather than lie about the data.
+              </li>
+              <li>
+                <strong>AP = stale data on partition</strong> — system stays up
+                but may serve outdated results.
+              </li>
+              <li>
+                <strong>CA = single node</strong> — theoretical in distributed
+                systems; not a real distributed choice.
+              </li>
+              <li>
+                <strong>No right or wrong answer</strong> — it completely
+                depends on your application's requirements.
+              </li>
+              <li>
+                <strong>Finance → CP. Social media → AP.</strong> Use this as
+                your mental anchor.
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

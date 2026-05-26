@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Horizontal and Vertical Scaling — Deep Dive</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">📚 System Design</div>
+        <ul class="nav-links">
+          <li><a href="lec1.html">1. Intro & MVC</a></li>
+          <li><a href="lec2.html">2. Core Concepts</a></li>
+          <li><a href="lec3.html">3. Scaling to Millions</a></li>
+          <li class="active"><a href="lec4.html">4. Scaling Deep Dive</a></li>
+          <li><a href="lec5.html">5. Global Scaling</a></li>
+          <li><a href="lec6.html">6. CAP Theorem</a></li>
+          <li><a href="lec7.html">7. Replication & Sharding</a></li>
+          <li><a href="lec8.html">8. NoSQL Deep Dive</a></li>
+        </ul>
+      </nav>
+
+      <div class="content-wrapper">
+        <main class="content">
+          <div class="topic-header">
+            <span class="tag">Lecture 4</span>
+            <h1>Horizontal and Vertical Scaling</h1>
+            <p class="subtitle">
+              Deep dive — when to use each, tradeoffs, and a full decision
+              framework
+            </p>
+          </div>
+
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                A <strong>deep dive</strong> into horizontal vs. vertical
+                scaling — building on the previous video.
+              </li>
+              <li>
+                Goal: understand <em>when</em> and <em>why</em> to choose each,
+                with focus on the <strong>API layer first</strong>, then
+                databases and frontend.
+              </li>
+              <li>
+                The honest answer is always <em>"it depends"</em> — but this
+                video gives you a real framework for making that decision.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>1. In-House vs. Cloud Environments</h2>
+            <p>
+              Before anything else —
+              <strong>where are your servers running?</strong> This changes the
+              scaling math significantly.
+            </p>
+
+            <h3>Cloud (Virtualized)</h3>
+            <ul>
+              <li>
+                You don't touch physical hardware — a cloud provider (AWS, GCP,
+                Azure) handles it.
+              </li>
+              <li>
+                Behind the scenes, they're
+                <strong>not physically swapping hardware</strong> — they're
+                re-allocating virtual resources from a shared pool.
+              </li>
+              <li>
+                You just change your instance size and the change is
+                <em>instant</em>.
+              </li>
+              <li>
+                <strong>No space constraints</strong> — want 20 servers? Done.
+                Scaling is significantly easier and faster.
+              </li>
+            </ul>
+
+            <h3>On-Premises (In-House)</h3>
+            <ul>
+              <li>
+                You physically own the servers, possibly in a data center you
+                can visit.
+              </li>
+              <li>
+                <strong>Space constraints</strong> — you can't endlessly add
+                servers; they take up physical room.
+              </li>
+              <li>
+                Replacing individual hardware components (e.g., swapping in more
+                RAM) is a real physical operation.
+              </li>
+              <li>
+                Diminishing returns on hardware cost are
+                <em>very real</em> here.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Context</span>
+              For most of this video, Caleb teaches from the cloud perspective.
+              On-prem context is only flagged where it meaningfully differs.
+            </div>
+          </section>
+
+          <section>
+            <h2>2. Quick Definitions (Review)</h2>
+            <ul>
+              <li>
+                <strong>Horizontal Scaling (Scale Out)</strong> — add more
+                servers running in parallel. One puny server → five puny servers
+                working together as one unit.
+              </li>
+              <li>
+                <strong>Vertical Scaling (Scale Up)</strong> — upgrade the
+                existing server (more CPU, RAM, etc.). One puny server → one
+                much beefier server.
+              </li>
+              <li>
+                The user <em>never notices the difference</em> — they just see
+                one service endpoint either way.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Important Caveat</span>
+              There is no universal best answer. The right choice depends on the
+              type of service — API, database, frontend, cache, queue. The video
+              builds the framework starting with the easiest case: the stateless
+              backend API.
+            </div>
+          </section>
+
+          <section>
+            <h2>3. Stateless Services & APIs</h2>
+
+            <h3>Why APIs Scale So Easily</h3>
+            <ul>
+              <li>
+                The backend API layer is the
+                <strong>easiest service to scale</strong> because it is
+                typically <em>stateless</em>.
+              </li>
+              <li>No user session data stored in-memory on the server.</li>
+              <li>No database instance living inside the backend server.</li>
+              <li>
+                Each request is completely <strong>self-contained</strong> — any
+                server can handle any request.
+              </li>
+            </ul>
+
+            <h3>The Danger of a Stateful API Server</h3>
+            <ul>
+              <li>
+                If your API server also hosts the database locally, adding a
+                second API server creates
+                <strong>two separate database instances</strong> → data gets out
+                of sync.
+              </li>
+              <li>
+                A write to Server 1's DB won't be reflected on a read from
+                Server 2's DB.
+              </li>
+              <li>
+                <strong>Fix:</strong> move the database to a
+                <em>separate, dedicated server</em>. Both API nodes share one
+                external database → API is now truly stateless.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Architecture</span>
+              WRONG: [API + DB] on each node. RIGHT: [API Node 1] + [API Node 2]
+              + [API Node 3] → all pointing to one [Shared DB Server].
+            </div>
+          </section>
+
+          <section>
+            <h2>4. What Can You Vertically Scale?</h2>
+            <p>
+              When vertically scaling a server, there are
+              <strong>four core hardware components</strong> to look at:
+            </p>
+            <ul>
+              <li>
+                <strong>CPU</strong> — processing power; how fast requests are
+                computed.
+              </li>
+              <li>
+                <strong>RAM</strong> — in-memory data storage; affects caching,
+                concurrent connections.
+              </li>
+              <li>
+                <strong>Disk</strong> — storage size + speed (SSD vs HDD); more
+                relevant for databases.
+              </li>
+              <li>
+                <strong>Network</strong> — bandwidth; how much data can move
+                in/out per second.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Note</span>
+              For stateless APIs, disk is rarely the bottleneck since nothing is
+              stored. CPU and RAM are the primary concerns.
+            </div>
+
+            <h3>Balancing Hardware Utilization</h3>
+            <ul>
+              <li>
+                Goal: have all four components
+                <strong>roughly balanced</strong> — close to the same %
+                utilization.
+              </li>
+              <li>
+                If wildly unbalanced, you're overpaying for something or
+                under-provisioning something else.
+              </li>
+            </ul>
+
+            <h3>Example Scenario</h3>
+            <ul>
+              <li>CPU: 90% | RAM: 20% | Disk: 20% | Network: 20%</li>
+              <li>
+                <strong>Option A — Double the whole server:</strong> CPU drops
+                to 45%, but RAM/Disk/Network drop to 10% — wastefully underused,
+                double the money.
+              </li>
+              <li>
+                <strong>Option B — Just upgrade the CPU (2x):</strong> CPU: 45%
+                | everything else stays. Much more cost-efficient — only upgrade
+                what's needed.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Target Utilization</span>
+              Aim for ~75% peak utilization across all components. Gives you
+              headroom for spikes without wasting money. If traffic is steady
+              and predictable, you can push closer to 90%. If traffic spikes
+              wildly, keep more headroom.
+            </div>
+          </section>
+
+          <section>
+            <h2>5. Steps to Scale an API Layer</h2>
+            <p>
+              The recommended <strong>step-by-step process</strong> for scaling
+              a backend API:
+            </p>
+
+            <h3>Step 1 — Vertical Scale to a Reasonable Starting Point</h3>
+            <ul>
+              <li>
+                Adjust the instance type (CPU, RAM) to match the workload.
+              </li>
+              <li>
+                Don't over-provision — find an instance where utilization is
+                <strong>roughly balanced and reasonable</strong>.
+              </li>
+              <li>
+                Goal: not running at 20% waste, not pushing 95% and risking
+                crashes.
+              </li>
+              <li>
+                This is NOT about making a supercomputer — just get the
+                <em>right-sized</em> instance.
+              </li>
+            </ul>
+
+            <h3>Step 2 — Horizontally Scale to at Least 2 Nodes</h3>
+            <ul>
+              <li>This is <strong>non-negotiable for production</strong>.</li>
+              <li>
+                Eliminates the Single Point of Failure (SPOF) on the backend.
+              </li>
+              <li>
+                Provides <strong>failover</strong> — if one node dies, the other
+                takes all traffic.
+              </li>
+              <li>
+                Enables <strong>High Availability</strong> — users don't
+                experience downtime during node failures.
+              </li>
+              <li>
+                Requires a <strong>Load Balancer</strong> in front — easy to set
+                up in cloud environments.
+              </li>
+              <li>
+                Once set up, adding more nodes is trivial — just attach them to
+                the load balancer.
+              </li>
+            </ul>
+
+            <h3>Step 3 — Choose: Continue Vertical or Horizontal?</h3>
+            <ul>
+              <li>Once you have the 2-node setup, you have flexibility.</li>
+              <li>
+                General rule:
+                <strong>horizontal scaling is preferred</strong> for stateless
+                APIs — no hardware ceiling.
+              </li>
+              <li>
+                But don't use the cheapest possible instances — use decent
+                instances so you don't need a hundred of them.
+              </li>
+              <li>
+                Let <strong>cost</strong> guide the decision (see: Diminishing
+                Returns section).
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Summary</span>
+              Step 1: Fine-tune instance size (vertical). Step 2: Add a second
+              node + load balancer (horizontal, for HA). Step 3: Scale further
+              via horizontal (preferred) or vertical (if still cost-effective).
+            </div>
+          </section>
+
+          <section>
+            <h2>6. The Tradeoff Framework</h2>
+
+            <h3>Diminishing Returns (Vertical Scaling)</h3>
+            <ul>
+              <li>
+                As you spend more money on a single server, you get
+                <strong>less performance improvement per dollar</strong>.
+              </li>
+              <li>
+                The cost curve for hardware is <em>exponential</em> — doubling
+                performance costs more than double the money.
+              </li>
+              <li>
+                Real example: going from a 16-core CPU to a 32-core CPU gives
+                ~2x performance, but the 32-core chip costs
+                <strong>more than 2x</strong> the 16-core chip.
+              </li>
+            </ul>
+
+            <h3>Laptop Analogy</h3>
+            <ul>
+              <li>
+                <strong>$800 laptop</strong> → 64 GB storage (basically
+                useless).
+              </li>
+              <li>
+                <strong>$1000 laptop</strong> → 1 TB storage (20x improvement
+                for $200 more).
+              </li>
+              <li>
+                <strong>$1200 laptop</strong> → 2 TB storage (2x improvement for
+                another $200).
+              </li>
+              <li>
+                <strong>$2400 laptop</strong> → maybe 3–4 TB (not 2x the
+                performance for 2x the money).
+              </li>
+            </ul>
+
+            <h3>The Cost Crossover Point</h3>
+            <ul>
+              <li>
+                <strong>Vertical scaling</strong> is more cost-effective at
+                <em>small scale</em> (before the crossover).
+              </li>
+              <li>
+                <strong>Horizontal scaling</strong> is more cost-effective at
+                <em>large scale</em> (after the crossover).
+              </li>
+              <li>
+                There's an <strong>initial flat cost</strong> to every server
+                (manufacturing, networking, base cost) regardless of how
+                powerful it is — that's the initial steep part of the horizontal
+                curve.
+              </li>
+              <li>
+                <strong>The switch point:</strong> when the cost of vertically
+                upgrading hardware exceeds the cost of adding another server.
+              </li>
+            </ul>
+
+            <h3>Virtualized Cloud Caveat</h3>
+            <ul>
+              <li>
+                In cloud environments, cloud providers aren't actually swapping
+                physical chips — they're reallocating virtual resources from a
+                shared pool.
+              </li>
+              <li>
+                Going from medium to large instance may be close to
+                <strong>2x cost for 2x performance</strong> — more linear than
+                physical hardware.
+              </li>
+              <li>
+                Diminishing returns are
+                <em>more pronounced on physical/on-prem hardware</em>.
+              </li>
+              <li>
+                Still useful to understand the theory — just know real-world
+                cloud numbers may behave more linearly.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>7. Scaling the Frontend</h2>
+            <ul>
+              <li>
+                Frontend scaling is largely <strong>not a concern</strong> in
+                modern architectures.
+              </li>
+              <li>
+                Host as a <strong>static site</strong> (HTML, CSS, JavaScript)
+                on a serverless service.
+              </li>
+              <li>
+                AWS: <strong>S3 static hosting</strong>; alternatives: Vercel,
+                Netlify, Cloudflare Pages.
+              </li>
+              <li>
+                You pay only for <strong>usage</strong> — no server
+                provisioning, no vertical/horizontal scaling decisions.
+              </li>
+              <li>
+                The cloud provider handles all scaling behind the scenes
+                automatically.
+              </li>
+              <li>
+                Works well because frontend files are simple assets with no
+                server-side computation.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">TL;DR for Frontend</span>
+              Use serverless static hosting and forget about it. Scaling is not
+              your problem.
+            </div>
+          </section>
+
+          <section>
+            <h2>8. Scaling the Database</h2>
+            <p>
+              The database is the <strong>hardest layer to scale</strong>.
+              Unlike stateless APIs, databases are <em>stateful</em> — you can't
+              just spin up identical nodes without coordination.
+            </p>
+
+            <h3>Strategy 1: Vertical Scaling First (Relational / SQL)</h3>
+            <ul>
+              <li>
+                For relational databases (PostgreSQL, MySQL),
+                <strong>vertical scaling first</strong> is the recommended
+                default.
+              </li>
+              <li>
+                Scale up to a very powerful database server — cloud providers
+                offer extremely high-spec instances.
+              </li>
+              <li>
+                You'd be surprised how far a single beefy database server can
+                take you.
+              </li>
+              <li>
+                Avoids the enormous complexity of distributed database
+                coordination.
+              </li>
+              <li><strong>Downside:</strong> single point of failure.</li>
+            </ul>
+
+            <h3>Eliminating the DB SPOF</h3>
+            <ul>
+              <li>
+                <strong>Standby Database</strong> — a second DB instance
+                synchronized with the primary but not actively serving traffic.
+                Only activates if the primary fails. Provides failover + High
+                Availability without the complexity of active clustering.
+              </li>
+              <li>
+                <strong>Read Replicas</strong> — copy data from primary to one
+                or more read-only nodes. All writes → primary. All reads → read
+                replicas. Can distribute replicas across geographic regions to
+                reduce latency. Scale read nodes independently from write node.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Good For</span>
+              Apps with a high read-to-write ratio (e.g., social media feeds —
+              one post per day, thousands of reads per day). Limitation: still
+              only one write location → adds latency for writes from
+              geographically distant clients.
+            </div>
+
+            <h3>Strategy 2: Multi-Master Clustering (Multiple Write Nodes)</h3>
+            <ul>
+              <li>
+                When a single write node becomes the bottleneck, add
+                <strong>multiple write nodes</strong>.
+              </li>
+              <li>
+                Massively increases complexity — write conflicts, ordering
+                guarantees, consistency across all write nodes.
+              </li>
+              <li>
+                <strong>Caleb's advice:</strong> don't add multi-master unless
+                you actually need it. Premature optimization is a real trap.
+              </li>
+              <li>
+                If you're building the world's largest social network — go for
+                it. Otherwise — stick with single write node + read replicas.
+              </li>
+              <li>
+                Dedicated videos on database clustering planned in the series.
+              </li>
+            </ul>
+
+            <h3>Strategy 3: NoSQL for Write-Heavy Systems</h3>
+            <ul>
+              <li>
+                <strong>NoSQL databases</strong> (MongoDB, Cassandra, DynamoDB)
+                are <em>built from the ground up</em> for horizontal scaling and
+                multi-write scenarios.
+              </li>
+              <li>
+                Natively designed for distributed writes — less rigidity in
+                schema = easier to shard and distribute.
+              </li>
+              <li>
+                Better choice when your app is
+                <strong>write-heavy</strong> (e.g., messaging apps, real-time
+                event streaming).
+              </li>
+              <li>
+                You get multi-write horizontal scaling benefits
+                <em>out of the box</em> vs. bolting it onto a relational DB.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>9. Serverless Options for All Tiers</h2>
+            <p>
+              All three tiers now have serverless options where the cloud
+              provider handles scaling entirely:
+            </p>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>Frontend</h3>
+                <p>Serverless static hosting — no compute needed.</p>
+                <p class="example">AWS S3 Static Hosting</p>
+                <p class="example">Vercel, Netlify</p>
+              </div>
+              <div class="tier-card">
+                <h3>Backend API</h3>
+                <p>Serverless functions or containers — scale to zero.</p>
+                <p class="example">AWS Fargate</p>
+                <p class="example">AWS Lambda</p>
+              </div>
+              <div class="tier-card">
+                <h3>Database</h3>
+                <p>Serverless NoSQL — natively horizontal, auto-scaled.</p>
+                <p class="example">AWS DynamoDB</p>
+                <p class="example">Serverless NoSQL</p>
+              </div>
+            </div>
+
+            <ul>
+              <li>
+                Pay for <strong>usage only</strong> — no idle server costs.
+              </li>
+              <li>Scaling is automatic and managed by the provider.</li>
+              <li>
+                Great for apps with
+                <strong>variable or unpredictable traffic</strong>.
+              </li>
+              <li>
+                <strong>Tradeoffs:</strong> cold starts (Lambda), vendor
+                lock-in, cost at very high scale.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>10. Decision Framework Summary</h2>
+
+            <h3>For Stateless APIs (Backend)</h3>
+            <ul>
+              <li>
+                Tune instance size (vertical) so resources are balanced and ~75%
+                utilized at peak.
+              </li>
+              <li>
+                Always add at least
+                <strong>2 nodes + load balancer</strong> (horizontal) for
+                HA/failover — non-negotiable for production.
+              </li>
+              <li>
+                After step 2, prefer <strong>horizontal scaling</strong> —
+                cheaper at scale, no hardware ceiling.
+              </li>
+            </ul>
+
+            <h3>For Databases (Relational / SQL)</h3>
+            <ul>
+              <li>
+                <strong>Vertical scale first</strong> — avoid distributed
+                complexity as long as possible.
+              </li>
+              <li>Add a <strong>standby replica</strong> to eliminate SPOF.</li>
+              <li>
+                Add <strong>read replicas</strong> for read-heavy workloads.
+              </li>
+              <li>
+                Only introduce <strong>multi-master</strong> if truly needed —
+                you'll know when you need it.
+              </li>
+            </ul>
+
+            <h3>For Databases (NoSQL)</h3>
+            <ul>
+              <li>
+                Use NoSQL when you need
+                <strong>native horizontal scaling</strong> or are
+                <strong>write-heavy</strong>.
+              </li>
+              <li>
+                Horizontal scaling is built in — much simpler than sharding
+                relational DBs.
+              </li>
+            </ul>
+
+            <h3>For Frontend</h3>
+            <ul>
+              <li>
+                Use <strong>serverless static hosting</strong> — scaling is
+                handled for you, no decisions needed.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Key Principles to Remember</h2>
+            <ul>
+              <li>
+                <strong>"It depends" is always the correct answer</strong> — but
+                now you have a framework for <em>why</em> it depends.
+              </li>
+              <li>
+                <strong>Don't over-engineer</strong> — only add complexity
+                (horizontal DB clustering, multi-master) when you've exhausted
+                simpler options.
+              </li>
+              <li>
+                <strong>Premature optimization is the enemy</strong> — scale
+                when you need to, not when you think you might someday need to.
+              </li>
+              <li>
+                <strong
+                  >In the cloud, vertical scaling is more accessible</strong
+                >
+                — virtualization makes instance upgrades cheap and instant.
+              </li>
+              <li>
+                <strong
+                  >On-prem/physical hardware = stronger case for
+                  horizontal</strong
+                >
+                — hardware costs are truly exponential.
+              </li>
+              <li>
+                <strong>The crossover point</strong> (where horizontal becomes
+                cheaper than vertical) is the natural trigger to switch
+                strategies.
+              </li>
+              <li>
+                <strong
+                  >Stateless = scales horizontally with ease. Stateful = harder
+                  to scale horizontally.</strong
+                >
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

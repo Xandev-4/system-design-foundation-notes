@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scaling a Web App to Millions of Users</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">📚 System Design</div>
+        <ul class="nav-links">
+          <li><a href="lec1.html">1. Intro & MVC</a></li>
+          <li><a href="lec2.html">2. Core Concepts</a></li>
+          <li class="active"><a href="lec3.html">3. Scaling to Millions</a></li>
+          <li><a href="lec4.html">4. Scaling Deep Dive</a></li>
+          <li><a href="lec5.html">5. Global Scaling</a></li>
+          <li><a href="lec6.html">6. CAP Theorem</a></li>
+          <li><a href="lec7.html">7. Replication & Sharding</a></li>
+          <li><a href="lec8.html">8. NoSQL Deep Dive</a></li>
+        </ul>
+      </nav>
+
+      <div class="content-wrapper">
+        <main class="content">
+          <div class="topic-header">
+            <span class="tag">Lecture 3</span>
+            <h1>Scaling a Web App to Millions of Users</h1>
+            <p class="subtitle">
+              Progressive architecture upgrades — from single server to full
+              distributed system
+            </p>
+          </div>
+
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                A <strong>practical exercise</strong> — take a tiny web app and
+                progressively scale it from a few users to millions.
+              </li>
+              <li>
+                Each architectural upgrade is presented with
+                <em>pros and cons</em>, simulating real backend engineering
+                decisions.
+              </li>
+              <li>
+                Primary focus: the <strong>backend layer</strong> — it's almost
+                always the first bottleneck.
+              </li>
+              <li>
+                Frontend is easy to scale (static files). Database is complex.
+                <strong>Backend first, always.</strong>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>1. Scalability (Review)</h2>
+            <ul>
+              <li>
+                The ability to
+                <strong>support an increasing workload</strong> without
+                collapsing.
+              </li>
+              <li>
+                <strong>Dimension 1:</strong> ups and downs in
+                daily/weekly/seasonal traffic — e.g., weekends busier, Black
+                Friday spikes.
+              </li>
+              <li>
+                <strong>Dimension 2:</strong> long-term growth — next year you
+                might have 2x the users.
+              </li>
+            </ul>
+
+            <h3>Resource Utilization</h3>
+            <ul>
+              <li>
+                Constant <strong>70% utilization</strong> → probably fine.
+              </li>
+              <li>
+                Spikes to <strong>90%</strong> → start thinking about scaling.
+              </li>
+              <li>
+                <strong>Never want to be at 100%</strong> — you need headroom
+                for unexpected spikes.
+              </li>
+              <li>
+                Solution can be as simple as a stronger server, or as complex as
+                a distributed system depending on scale.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>2. Vertical vs. Horizontal Scaling (Review)</h2>
+            <ul>
+              <li>
+                <strong>Vertical Scaling (Scale Up)</strong> — add more CPU/RAM
+                to the existing server. Simple, but has a hardware ceiling.
+              </li>
+              <li>
+                <strong>Horizontal Scaling (Scale Out)</strong> — add more
+                servers running in parallel. No hard ceiling, preferred at
+                scale.
+              </li>
+              <li>
+                Most real-world solutions use a <em>combination of both</em>.
+              </li>
+              <li>
+                Horizontal scaling requires the backend to be structured to
+                support it — stateless APIs work great; databases are harder.
+              </li>
+            </ul>
+
+            <h3>Autoscaling</h3>
+            <ul>
+              <li>
+                Horizontally scale
+                <strong>up and down automatically</strong> based on current
+                traffic.
+              </li>
+              <li>Cloud providers handle this for you via virtualization.</li>
+              <li>Solves the daily/weekly traffic fluctuation problem.</li>
+              <li>
+                This is what <strong>elasticity</strong> means — not the same as
+                scalability.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Key Distinction</span>
+              Scalability = ability to handle growth over time. Elasticity =
+              dynamically adjusting up AND down based on current load. Different
+              concepts.
+            </div>
+          </section>
+
+          <section>
+            <h2>3. Typical 3-Tier App Structure</h2>
+            <ul>
+              <li>
+                <strong>Frontend</strong> ↔ <strong>Backend API</strong> ↔
+                <strong>Database</strong>
+              </li>
+              <li>
+                Each tier may be scaled differently — don't treat them as one
+                unit.
+              </li>
+              <li>
+                <strong>Frontend</strong> — usually static files, very easy to
+                scale (serverless).
+              </li>
+              <li>
+                <strong>Backend</strong> — computation per request,
+                <em>first likely bottleneck</em>.
+              </li>
+              <li>
+                <strong>Database</strong> — hardest to scale, tackle last.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Strategy</span>
+              Tackle backend first. Use caching to reduce DB load before ever
+              having to scale the database directly.
+            </div>
+          </section>
+
+          <section>
+            <h2>Stage 1: Single Server (Monolith)</h2>
+            <p>
+              Everything — DB, backend, and frontend — lives on
+              <strong>one single server</strong>.
+            </p>
+            <ul>
+              <li>
+                Client makes request → hits one server → backend processes →
+                fetches from DB → returns HTML.
+              </li>
+              <li>
+                Backend may use a <strong>template engine</strong> (Jinja2,
+                Razor, Pug) to generate HTML dynamically.
+              </li>
+              <li>
+                Follows <strong>MVC pattern</strong> internally: Controller →
+                Model → DB → View → Response.
+              </li>
+            </ul>
+
+            <h3>Pros</h3>
+            <ul>
+              <li>
+                <strong>Super simple</strong> for beginners — spin up one VM,
+                run everything from it.
+              </li>
+              <li>
+                <strong>Simple to vertically scale</strong> — just add more RAM
+                or CPU.
+              </li>
+            </ul>
+
+            <h3>Cons</h3>
+            <ul>
+              <li>
+                <strong>Cannot scale sections independently</strong> — if DB
+                needs more RAM but backend doesn't, you can't split the upgrade.
+              </li>
+              <li>
+                <strong>No separation of concerns</strong> — everything tightly
+                coupled, hard for larger teams to work in.
+              </li>
+              <li>
+                <strong>Single Point of Failure (SPOF)</strong> — if the server
+                goes down, EVERYTHING goes down.
+              </li>
+              <li>
+                <strong>DDoS vulnerability</strong> — one server to flood with
+                traffic and your app crashes.
+              </li>
+              <li>
+                <strong>Limited to vertical scaling</strong> — diminishing
+                returns at large scale.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Best For</span>
+              Small personal projects with very few users. Not suitable for
+              production at scale.
+            </div>
+          </section>
+
+          <section>
+            <h2>Stage 2: Three-Tier Architecture</h2>
+            <p>
+              Split the monolith into three <strong>dedicated servers</strong>.
+            </p>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>Frontend Server</h3>
+                <p>
+                  Standalone React app — just HTML, CSS, JS. Hosted on a
+                  serverless static file service.
+                </p>
+                <p class="example">AWS → S3 / Vercel / Netlify</p>
+              </div>
+              <div class="tier-card">
+                <h3>Backend Server</h3>
+                <p>
+                  API layer handling computation per request. First bottleneck
+                  to tackle.
+                </p>
+                <p class="example">AWS → EC2</p>
+              </div>
+              <div class="tier-card">
+                <h3>Database Server</h3>
+                <p>Dedicated DB instance. Scale independently from backend.</p>
+                <p class="example">AWS → RDS</p>
+              </div>
+            </div>
+
+            <h3>Frontend in 3-Tier</h3>
+            <ul>
+              <li>
+                No longer uses template engines — now a standalone
+                <strong>React app</strong>.
+              </li>
+              <li>
+                Hosted on a <strong>serverless</strong> static file service — no
+                compute needed server-side.
+              </li>
+              <li>JS in browser makes API calls to the backend.</li>
+              <li>
+                <strong>Not the bottleneck</strong> — you only pay for usage, no
+                server provisioning needed.
+              </li>
+            </ul>
+
+            <h3>Pros</h3>
+            <ul>
+              <li>
+                <strong>Very common</strong> — well-documented, easy to find
+                support.
+              </li>
+              <li>
+                <strong>Independent scaling</strong> — scale DB, backend, or
+                frontend separately.
+              </li>
+              <li>
+                Easier to find bottlenecks — each layer has its own resource
+                metrics.
+              </li>
+            </ul>
+
+            <h3>Cons</h3>
+            <ul>
+              <li>
+                <strong>Requires an API layer</strong> — now you must design and
+                maintain a proper backend API.
+              </li>
+              <li>
+                <strong>CORS complexity</strong> — frontend and backend on
+                different domains → configure cross-origin requests.
+              </li>
+              <li>
+                <strong>Networking setup</strong> — backend and DB must be
+                configured to communicate securely.
+              </li>
+              <li>
+                <strong>Still vertical scaling only</strong> for backend and DB
+                — no horizontal scaling yet.
+              </li>
+              <li>
+                <strong>Still has SPOF</strong> at the backend level — one
+                backend server is still a single point of failure.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Stage 3: Load Balancing + Horizontal Scaling</h2>
+            <p>
+              The next logical step: introduce
+              <strong>horizontal scaling</strong> for the backend.
+            </p>
+
+            <h3>The Problem</h3>
+            <ul>
+              <li>One backend server = single point of failure.</li>
+              <li>If it goes down → entire app breaks.</li>
+              <li>Can't handle unlimited traffic growth with one node.</li>
+            </ul>
+
+            <h3>The Solution</h3>
+            <ul>
+              <li>
+                Add multiple backend servers (nodes) running the same API code.
+              </li>
+              <li>
+                A <strong>Load Balancer</strong> sits in front and distributes
+                incoming requests across all servers.
+              </li>
+              <li>
+                Frontend only knows <strong>one endpoint</strong> (e.g.,
+                api.mysite.com) → points to load balancer's IP.
+              </li>
+              <li>
+                If one server goes down, load balancer redirects traffic to
+                healthy nodes automatically.
+              </li>
+              <li>
+                Load balancer also <strong>balances traffic evenly</strong> — no
+                single server gets overloaded.
+              </li>
+            </ul>
+
+            <h3>Why APIs Scale Horizontally So Well</h3>
+            <ul>
+              <li>
+                APIs are typically <strong>stateless</strong> — they don't store
+                user session data locally.
+              </li>
+              <li>
+                Each request is self-contained, so any node can handle any
+                request.
+              </li>
+              <li>
+                This is the key property that makes horizontal scaling easy for
+                backends.
+              </li>
+            </ul>
+
+            <h3>Pros</h3>
+            <ul>
+              <li>
+                Removes SPOF from backend → <strong>High Availability</strong>.
+              </li>
+              <li>
+                Failover: if a node dies, traffic automatically reroutes →
+                <strong>Fault Tolerant</strong>.
+              </li>
+              <li>Horizontally scalable — add/remove servers as needed.</li>
+              <li>
+                <strong>Cheaper at scale</strong> than vertical scaling — no
+                diminishing returns.
+              </li>
+              <li>
+                Supports <strong>autoscaling</strong> — provision/deprovision
+                nodes dynamically based on traffic spikes.
+              </li>
+            </ul>
+
+            <h3>Cons</h3>
+            <ul>
+              <li>Must add and configure a load balancing service.</li>
+              <li>
+                <strong>No caching yet</strong> — every request hits the DB
+                fresh, even if 80% ask for the same data.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Stage 4: CDN (Content Delivery Network)</h2>
+
+            <h3>The Problem</h3>
+            <ul>
+              <li>
+                If your server is in the US and user is in India, every request
+                travels a massive distance — adding latency.
+              </li>
+            </ul>
+
+            <h3>The Solution</h3>
+            <ul>
+              <li>
+                A CDN distributes
+                <strong>cached copies of static content</strong> (HTML, CSS, JS,
+                images, videos) across multiple <em>edge nodes</em> worldwide.
+              </li>
+              <li>
+                User's request goes to the
+                <strong>nearest CDN edge node</strong> — not all the way to the
+                origin server.
+              </li>
+              <li>Popular CDN: <strong>Cloudflare</strong>.</li>
+            </ul>
+
+            <h3>How It Works</h3>
+            <ul>
+              <li>
+                User makes request → DNS resolves to nearest CDN edge node.
+              </li>
+              <li>
+                <strong>Cache hit</strong> → edge node responds directly (super
+                fast).
+              </li>
+              <li>
+                <strong>Cache miss</strong> → edge node fetches from origin
+                server, caches it, responds to user.
+              </li>
+            </ul>
+
+            <h3>What CDNs Cache</h3>
+            <ul>
+              <li>
+                <strong>Static content</strong>: HTML, CSS, JavaScript, images,
+                videos, downloadable files.
+              </li>
+              <li>
+                Some API responses that change infrequently — but CDN is
+                primarily for static files.
+              </li>
+              <li>
+                A separate <strong>caching layer (Redis)</strong> handles
+                dynamic API data.
+              </li>
+            </ul>
+
+            <h3>Pros</h3>
+            <ul>
+              <li>
+                <strong>Reduced latency</strong> — content served from nearest
+                edge node, not main server.
+              </li>
+              <li>
+                <strong>Reduced server load</strong> — requests never reach
+                origin server if cached.
+              </li>
+              <li>
+                <strong>Easy global reach</strong> — acts as a "cheat code" to
+                make your app feel global without multi-region deployment.
+              </li>
+              <li>
+                <strong>DDoS protection</strong> — many CDNs (Cloudflare)
+                include built-in attack mitigation.
+              </li>
+              <li>
+                <strong>Cost savings</strong> — especially for apps heavy on
+                images, videos, and large file downloads.
+              </li>
+              <li>
+                <strong>SEO benefits</strong> — faster page loads improve search
+                rankings.
+              </li>
+            </ul>
+
+            <h3>Cons</h3>
+            <ul>
+              <li>
+                <strong>Increased complexity</strong> — you must understand how
+                TTL (Time-To-Live) works.
+              </li>
+              <li>
+                <strong>Stale data risk</strong> — cached content may be
+                outdated until TTL expires or you manually purge it.
+              </li>
+              <li>
+                <strong>Cache invalidation</strong> — need a strategy for when
+                files change.
+              </li>
+              <li>
+                <strong>Cache hit ratio</strong> — need to monitor what % of
+                requests are served from cache vs. origin.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Stage 5: Caching Layer (Redis)</h2>
+
+            <h3>The Problem</h3>
+            <ul>
+              <li>
+                Even with horizontal scaling, every API request hits the
+                database — even for data that rarely changes.
+              </li>
+              <li>
+                At millions of users, this is a
+                <strong>massive load on the DB</strong>.
+              </li>
+            </ul>
+
+            <h3>The Solution</h3>
+            <ul>
+              <li>
+                Add an <strong>in-memory cache (Redis)</strong> between the
+                backend and database.
+              </li>
+              <li>
+                <strong>Cache hit</strong> — data found in cache → return
+                immediately, no DB query needed.
+              </li>
+              <li>
+                <strong>Cache miss</strong> — data not in cache → fetch from DB
+                → store in cache → return to client.
+              </li>
+              <li>
+                First request still goes to DB, but all subsequent requests for
+                same data are served from RAM —
+                <em>orders of magnitude faster</em>.
+              </li>
+            </ul>
+
+            <h3>The 80/20 Rule</h3>
+            <ul>
+              <li>
+                In most apps,
+                <strong>80% of requests ask for 20% of the data</strong>.
+              </li>
+              <li>
+                Cache just that 20% in RAM → reduce DB queries by up to 80%.
+              </li>
+              <li>
+                Also helps with <strong>complex queries</strong> — a 200ms JOIN
+                query cached = instant on all subsequent hits.
+              </li>
+            </ul>
+
+            <h3>Cache Invalidation Strategies</h3>
+            <ul>
+              <li>
+                <strong>Update both DB and cache together</strong> — most
+                reliable, keeps them in sync.
+              </li>
+              <li>
+                <strong>Set a TTL (Time-To-Live)</strong> — cache expires after
+                X seconds; briefly stale but auto-self-heals.
+              </li>
+              <li>
+                <strong>Clear the cache on write</strong> — cache is deleted;
+                next read is a cache miss, fetching fresh data from DB.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Cache is Volatile!</span>
+              Redis stores data in RAM — if the server restarts, the cache is
+              cleared. This is fine because the DB is the source of truth. It's
+              just a temporary performance hit on restart (cold start).
+            </div>
+
+            <h3>Scaling the Cache</h3>
+            <ul>
+              <li>
+                You can <strong>horizontally scale Redis</strong> (Redis
+                Cluster) before needing to scale the DB.
+              </li>
+              <li>Often cheaper and easier than scaling the database.</li>
+              <li>
+                Scale the cache first. Only scale the DB when you truly have to.
+              </li>
+            </ul>
+
+            <h3>Pros</h3>
+            <ul>
+              <li>Drastically reduces DB compute load.</li>
+              <li>Improves response speed / reduces latency.</li>
+              <li>
+                Likely <strong>cheaper overall</strong> — less DB compute
+                needed.
+              </li>
+              <li>
+                Can cache results of complex queries, not just simple lookups.
+              </li>
+            </ul>
+
+            <h3>Cons</h3>
+            <ul>
+              <li>Increases architectural complexity.</li>
+              <li>
+                <strong>Cache invalidation</strong> is a notoriously hard
+                problem.
+              </li>
+              <li>TTL management — balance freshness vs. performance.</li>
+              <li>
+                Data can be <em>temporarily out of sync</em> between cache and
+                DB.
+              </li>
+              <li>
+                Cache is volatile — restarting clears it (cold start performance
+                hit).
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Stage 6: Database Layer Scaling</h2>
+            <p>
+              After optimizing the backend, the
+              <strong>database becomes the next bottleneck</strong>.
+            </p>
+
+            <h3>Primary/Replica Architecture</h3>
+            <ul>
+              <li>
+                All <strong>writes</strong> go to the primary (write) node.
+              </li>
+              <li>
+                All <strong>reads</strong> are distributed across multiple
+                replica (read) nodes.
+              </li>
+              <li>
+                Most apps are <strong>read-heavy (~80% reads)</strong> — this
+                setup scales reads efficiently.
+              </li>
+              <li>
+                A <strong>standby write node</strong> can be on standby for
+                failover.
+              </li>
+            </ul>
+
+            <h3>NoSQL vs SQL for Horizontal Scaling</h3>
+            <ul>
+              <li>
+                Some <strong>NoSQL databases</strong> (Cassandra, DynamoDB,
+                MongoDB) are designed from the ground up for horizontal scaling
+                — much easier to shard.
+              </li>
+              <li>
+                <strong>SQL/relational databases</strong> can be horizontally
+                scaled but it's more complex — sharding, managing transactions
+                across nodes.
+              </li>
+              <li>
+                If you know your app will be at massive scale, NoSQL may be a
+                better fit — but it's a big design decision.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Full Architecture at Scale</h2>
+
+            <div class="callout">
+              <span class="callout-label">Request Flow</span>
+              User types URL → DNS resolves to CDN edge or frontend → Browser
+              loads static files (from CDN if cached) → JS makes API call → hits
+              Load Balancer → routed to one Backend Node → checks Redis cache →
+              Cache hit: return immediately / Cache miss: query DB, store in
+              cache, return → response travels back to user
+            </div>
+
+            <h3>All Layers Stack</h3>
+            <ul>
+              <li>
+                <strong>CDN</strong> — serves static files from nearest edge
+                node worldwide.
+              </li>
+              <li>
+                <strong>Frontend</strong> — serverless static hosting
+                (S3/Vercel), zero compute server-side.
+              </li>
+              <li>
+                <strong>Load Balancer</strong> — single endpoint for frontend,
+                distributes to backend nodes.
+              </li>
+              <li>
+                <strong>Backend Nodes</strong> — stateless, horizontally scaled
+                API servers.
+              </li>
+              <li>
+                <strong>Redis Cache</strong> — in-memory layer, absorbs 80% of
+                DB queries.
+              </li>
+              <li>
+                <strong>Database Cluster</strong> — write node + read replicas +
+                standby failover node.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Evolution Summary</h2>
+            <ul>
+              <li>
+                <strong>Stage 1 — Single Server:</strong> Simple to set up.
+                SPOF, no independent scaling, vertical only.
+              </li>
+              <li>
+                <strong>Stage 2 — 3-Tier:</strong> Independent scaling per
+                layer. Still vertical only, still SPOF at backend.
+              </li>
+              <li>
+                <strong>Stage 3 — Load Balancer + Horizontal Scaling:</strong>
+                Removes backend SPOF, High Availability. No caching, every
+                request hits DB.
+              </li>
+              <li>
+                <strong>Stage 4 — CDN:</strong> Reduces latency globally,
+                reduces static file load. Stale cache risk, added complexity.
+              </li>
+              <li>
+                <strong>Stage 5 — Redis Caching:</strong> Drastically reduces DB
+                load, faster responses. Cache invalidation complexity.
+              </li>
+              <li>
+                <strong>Stage 6 — Database Clustering:</strong> Scales reads,
+                removes DB SPOF. Most complex to implement.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Key Mental Models</h2>
+            <ul>
+              <li>
+                <strong>Stateless backends scale easily horizontally</strong> —
+                session state should live in DB or cache, never in-memory on the
+                server.
+              </li>
+              <li>
+                <strong>Scale DB last</strong> — use caching to reduce DB load
+                first. Only scale the DB when you truly have to.
+              </li>
+              <li>
+                <strong>Vertical scaling has diminishing returns</strong> — at
+                massive scale, horizontal is always cheaper.
+              </li>
+              <li>
+                <strong
+                  >CDN = static content optimization. Redis = dynamic content
+                  optimization.</strong
+                >
+                They solve different problems.
+              </li>
+              <li>
+                <strong>Cache invalidation is hard</strong> — always have a
+                clear strategy for keeping cache and DB in sync.
+              </li>
+              <li>
+                <strong
+                  >More layers = more complexity = more things that can
+                  fail</strong
+                >
+                — only add layers when justified by actual scale needs.
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

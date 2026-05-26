@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intro to System Design - MVC & Three-Tier Architecture</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">📚 System Design</div>
+        <ul class="nav-links">
+          <li class="active"><a href="lec1.html">1. Intro & MVC</a></li>
+          <li><a href="lec2.html">2. Core Concepts</a></li>
+          <li><a href="lec3.html">3. Scaling to Millions</a></li>
+          <li><a href="lec4.html">4. Scaling Deep Dive</a></li>
+          <li><a href="lec5.html">5. Global Scaling</a></li>
+          <li><a href="lec6.html">6. CAP Theorem</a></li>
+          <li><a href="lec7.html">7. Replication & Sharding</a></li>
+          <li><a href="lec8.html">8. NoSQL Deep Dive</a></li>
+        </ul>
+      </nav>
+
+      <div class="content-wrapper">
+        <main class="content">
+          <div class="topic-header">
+            <span class="tag">Lecture 1</span>
+            <h1>Introduction to System Design</h1>
+            <p class="subtitle">MVC and Three-Tier Architecture</p>
+          </div>
+
+          <section>
+            <h2>Key Vocabulary</h2>
+            <ul>
+              <li>
+                <strong>Design Pattern</strong> — how you organize code within a
+                single project/application.
+              </li>
+              <li>
+                <strong>Architecture</strong> — how different systems (servers,
+                databases, services) interact to build a larger system.
+              </li>
+              <li>
+                <strong>System Design</strong> — the process of solving a
+                specific large-scale problem end-to-end, usually resulting in an
+                architecture.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">TL;DR</span>
+              Design Pattern = code organization. Architecture = system
+              organization. System Design = the process of getting to an
+              architecture.
+            </div>
+          </section>
+
+          <section>
+            <h2>What is System Design?</h2>
+            <ul>
+              <li>
+                The process of defining the
+                <strong>architecture, components, and data flow</strong> of a
+                system to meet specific requirements.
+              </li>
+              <li>
+                Happens <em>before</em> coding — it's the blueprint of your
+                application.
+              </li>
+              <li>
+                Covers both <strong>high-level</strong> (big picture, services,
+                databases) and <strong>low-level</strong> (classes, functions,
+                algorithms) design.
+              </li>
+              <li>
+                Goal: build systems that are
+                <strong>scalable, reliable, maintainable, and efficient</strong
+                >.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Why System Design Matters</h2>
+            <ul>
+              <li>
+                Bad design early = <strong>technical debt</strong> that
+                compounds over time.
+              </li>
+              <li>
+                A well-designed system handles growth — more users, more data —
+                without breaking.
+              </li>
+              <li>
+                It's the difference between a project that works and a product
+                that <em>scales</em>.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>MVC — Model View Controller</h2>
+            <p>
+              A <strong>design pattern</strong> that splits your application
+              code into three logical sections. All of it still lives in one
+              project/repo.
+            </p>
+            <ul>
+              <li>
+                <strong>Model</strong> — talks to the database; responsible for
+                fetching/storing data.
+              </li>
+              <li>
+                <strong>View</strong> — responsible for presenting data
+                (generates HTML + CSS).
+              </li>
+              <li>
+                <strong>Controller</strong> — the coordinator; receives the
+                request, talks to the model, passes data to the view.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Request Flow</span>
+              User Request → Router → Controller → Model → Database → Controller
+              → View → HTML Response → User
+            </div>
+
+            <h3>Why MVC?</h3>
+            <ul>
+              <li>
+                <strong>Separation of concerns</strong> — each layer has one
+                job.
+              </li>
+              <li>Easier to test, maintain, and scale individual parts.</li>
+              <li>
+                Multiple Views can use the same Model (e.g. web + mobile app).
+              </li>
+            </ul>
+
+            <h3>MVC in the Real World</h3>
+            <ul>
+              <li>
+                <strong>Django</strong> (Python) — follows MVC (calls it MTV:
+                Model-Template-View)
+              </li>
+              <li>
+                <strong>Express.js</strong> — you manually implement MVC pattern
+              </li>
+              <li><strong>Spring Boot</strong> (Java) — built around MVC</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Three-Tier Architecture</h2>
+            <p>
+              A physical/deployment model that splits the system into three
+              distinct layers. Each tier runs as its own separate
+              service/server.
+            </p>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>Tier 1 — Presentation</h3>
+                <p>The frontend / UI. What the user interacts with directly.</p>
+                <p class="example">e.g. React app, mobile app</p>
+                <p class="example">AWS → S3</p>
+              </div>
+              <div class="tier-card">
+                <h3>Tier 2 — Application</h3>
+                <p>
+                  The backend / business logic. Processes requests, applies
+                  rules.
+                </p>
+                <p class="example">e.g. Node.js / Express server</p>
+                <p class="example">AWS → EC2</p>
+              </div>
+              <div class="tier-card">
+                <h3>Tier 3 — Data</h3>
+                <p>The database layer. Stores and retrieves data.</p>
+                <p class="example">e.g. PostgreSQL, MongoDB</p>
+                <p class="example">AWS → RDS</p>
+              </div>
+            </div>
+
+            <h3>Monolith → 3-Tier: What Actually Changes?</h3>
+            <ul>
+              <li>Split the frontend into its own application (e.g. React).</li>
+              <li>
+                Change the database connection string to point to a separate DB
+                server.
+              </li>
+              <li>
+                That's literally it code-wise — the big change is
+                <em>architectural</em>.
+              </li>
+            </ul>
+
+            <h3>Why Separate into 3 Tiers?</h3>
+            <ul>
+              <li>
+                <strong>Independent scalability</strong> — scale only the layer
+                that needs it.
+              </li>
+              <li>
+                Need more backend compute? Spin up 3 backend servers without
+                touching frontend or DB.
+              </li>
+              <li>
+                Need more DB capacity? Scale the database layer on its own.
+              </li>
+            </ul>
+
+            <h3>New Challenges Introduced</h3>
+            <ul>
+              <li>
+                <strong>Load balancing</strong> — which backend server does the
+                frontend talk to?
+              </li>
+              <li>Network communication between services adds latency.</li>
+              <li>More moving parts = more complexity to manage.</li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Caleb's Advice</span>
+              Start with 3-tier from day one. Running everything on a single
+              server is uncommon for any real app — skip the full monolith
+              phase.
+            </div>
+
+            <h3>MVC vs Three-Tier</h3>
+            <ul>
+              <li>
+                <strong>MVC</strong> is a <em>code organization pattern</em> —
+                how you structure your code.
+              </li>
+              <li>
+                <strong>Three-Tier</strong> is a
+                <em>deployment/infrastructure pattern</em> — how your system is
+                physically separated.
+              </li>
+              <li>
+                They coexist — your backend tier can internally follow MVC.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>What's Coming in the Series</h2>
+            <ul>
+              <li>Scaling from 1 user → millions of users</li>
+              <li>Load Balancing</li>
+              <li>Caching layers</li>
+              <li>Microservices deep dive</li>
+              <li>Database scaling</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Quick Recap</h2>
+            <ul>
+              <li>
+                <strong>Design Pattern</strong> → organizes code (e.g. MVC)
+              </li>
+              <li>
+                <strong>Architecture</strong> → organizes systems (e.g. 3-Tier)
+              </li>
+              <li>
+                <strong>System Design</strong> → the process of solving a
+                large-scale problem → ends with an architecture
+              </li>
+              <li>
+                <strong>MVC flow:</strong> Router → Controller → Model → DB →
+                Controller → View → User
+              </li>
+              <li>
+                <strong>3-Tier:</strong> Frontend Server | Backend Server |
+                Database Server
+              </li>
+              <li>
+                <strong>Monolith:</strong> all of the above on one single server
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

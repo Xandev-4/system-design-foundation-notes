@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scaling to Global Levels — Multi-Region Architecture</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">📚 System Design</div>
+        <ul class="nav-links">
+          <li><a href="lec1.html">1. Intro & MVC</a></li>
+          <li><a href="lec2.html">2. Core Concepts</a></li>
+          <li><a href="lec3.html">3. Scaling to Millions</a></li>
+          <li><a href="lec4.html">4. Scaling Deep Dive</a></li>
+          <li class="active"><a href="lec5.html">5. Global Scaling</a></li>
+          <li><a href="lec6.html">6. CAP Theorem</a></li>
+          <li><a href="lec7.html">7. Replication & Sharding</a></li>
+          <li><a href="lec8.html">8. NoSQL Deep Dive</a></li>
+        </ul>
+      </nav>
+
+      <div class="content-wrapper">
+        <main class="content">
+          <div class="topic-header">
+            <span class="tag">Lecture 5</span>
+            <h1>Scaling to Global Levels</h1>
+            <p class="subtitle">
+              Multi-region architecture, GeoDNS, CDN edge workers, and data
+              localization laws
+            </p>
+          </div>
+
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                Builds on horizontal scaling and zooms out to answer:
+                <strong>where are your servers physically located?</strong>
+              </li>
+              <li>
+                10 servers in the same building = one power outage wipes
+                everything.
+              </li>
+              <li>
+                Covers <strong>4 progressive levels</strong> of geographic
+                distribution — from a single data center to globally distributed
+                infrastructure across continents.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>1. The Core Question: Server Proximity</h2>
+            <p>
+              When you horizontally scale, you need to decide
+              <strong>how close together those servers are</strong>. Each level
+              adds more High Availability, more latency improvement for
+              distributed users, and more complexity and cost.
+            </p>
+
+            <ul>
+              <li><strong>Level 1</strong> — Same Data Center</li>
+              <li>
+                <strong>Level 2</strong> — Same Region, Different Availability
+                Zones
+              </li>
+              <li>
+                <strong>Level 3</strong> — Different Regions (within a
+                continent)
+              </li>
+              <li><strong>Level 4</strong> — Different Continents</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>2. Level 1 — Same Data Center</h2>
+            <p>
+              A <strong>data center</strong> = a building (or campus) in a
+              single physical location, housing servers run by a company or
+              cloud provider.
+            </p>
+
+            <h3>What It Improves</h3>
+            <ul>
+              <li>
+                ✅ <strong>Scalability</strong> — more servers = more
+                throughput.
+              </li>
+              <li>
+                ✅ <strong>High Availability (partial)</strong> — if one server
+                crashes, the other takes traffic.
+              </li>
+            </ul>
+
+            <h3>What It Does NOT Improve</h3>
+            <ul>
+              <li>
+                ❌ <strong>Latency</strong> — both servers are the same physical
+                distance from any user; routing to either one takes the same
+                time.
+              </li>
+              <li>
+                ❌ <strong>True fault tolerance</strong> — a power outage or
+                physical disaster at the data center takes
+                <em>both servers down simultaneously</em>.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Best For</span>
+              Simple scaling where you just need more compute, not geographic
+              resilience.
+            </div>
+          </section>
+
+          <section>
+            <h2>3. Level 2 — Same Region, Multiple AZs</h2>
+
+            <h3>What is an AWS Region?</h3>
+            <ul>
+              <li>
+                A <strong>region</strong> is a named geographic grouping of data
+                centers.
+              </li>
+              <li>
+                AWS has <strong>8 North American regions</strong> (e.g.,
+                us-east-1, us-east-2 Ohio, us-west-1, us-west-2, etc.).
+              </li>
+              <li>
+                Pick the region <strong>closest to your user base</strong> —
+                e.g., most users in California → pick a US West region.
+              </li>
+            </ul>
+
+            <h3>What is an Availability Zone (AZ)?</h3>
+            <ul>
+              <li>
+                Within a single region, AWS has
+                <strong>multiple Availability Zones</strong> (e.g., us-east-2a,
+                us-east-2b, us-east-2c).
+              </li>
+              <li>
+                Each AZ is a <strong>logically separated data center</strong> —
+                different buildings, different power grids.
+              </li>
+              <li>
+                AZs are connected with
+                <strong>high-speed, low-latency links</strong> for efficient
+                inter-AZ communication.
+              </li>
+              <li>
+                Both AZs are still in the same broad geographic area (e.g., both
+                in Ohio).
+              </li>
+            </ul>
+
+            <h3>What It Improves</h3>
+            <ul>
+              <li>
+                ✅ <strong>Scalability</strong> — still have multiple servers.
+              </li>
+              <li>
+                ✅ <strong>High Availability (stronger)</strong> — if an entire
+                AZ goes down, servers in other AZs stay up.
+              </li>
+            </ul>
+
+            <h3>What It Does NOT Improve</h3>
+            <ul>
+              <li>
+                ❌ <strong>Latency</strong> — servers are still geographically
+                close; a request from California hits roughly the same latency
+                to either AZ in Ohio.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Recommendation</span>
+              Do this as a baseline for any production system. Low complexity,
+              low additional cost, massively improves resilience against
+              data-center-level failures.
+            </div>
+          </section>
+
+          <section>
+            <h2>4. Level 3 — Multiple Regions (Within a Continent)</h2>
+            <ul>
+              <li>
+                Servers in two different AWS regions — e.g., us-east-2 (Ohio)
+                and us-west-2 (Oregon).
+              </li>
+              <li>
+                Now you have servers on the
+                <strong>East Coast and West Coast</strong> of the US.
+              </li>
+              <li>
+                You <strong>can't blindly round-robin</strong> traffic across
+                regions — that defeats the whole point.
+              </li>
+              <li>
+                If a user in California gets routed to an East Coast server,
+                you've increased their latency for no benefit.
+              </li>
+              <li>
+                Solution:
+                <strong>Geolocation-Based DNS Routing (GeoDNS)</strong>.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>5. Geolocation Routing (GeoDNS)</h2>
+            <p>
+              GeoDNS directs clients to the
+              <strong>nearest region</strong> based on their geographic
+              location, at the DNS resolution level.
+            </p>
+
+            <h3>How It Works</h3>
+            <ul>
+              <li>Client makes a request → DNS lookup.</li>
+              <li>GeoDNS determines client's approximate location (by IP).</li>
+              <li>
+                DNS returns the IP/endpoint of the
+                <strong>closest region</strong>.
+              </li>
+              <li>Client connects to that region's load balancer.</li>
+              <li>
+                Region's load balancer routes to one of that region's servers.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">AWS Service</span>
+              Route 53 supports geolocation and latency-based routing policies.
+              Client in California → US West Region. Client in New York → US
+              East Region. Client in London → EU Region.
+            </div>
+
+            <h3>Architecture of Each Region</h3>
+            <ul>
+              <li>
+                Each region acts as an
+                <strong>independent scaled unit</strong> with its own Load
+                Balancer.
+              </li>
+              <li>
+                Multiple backend servers behind the LB, split across multiple
+                AZs (Level 2 within Level 3).
+              </li>
+              <li>
+                Regions can be <strong>scaled independently</strong> — e.g., US
+                East gets 75% traffic → give it 3 servers; US West gets 25% →
+                give it 2 servers.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>6. The Database Problem in Multi-Region</h2>
+
+            <h3>The Core Issue</h3>
+            <ul>
+              <li>
+                If you have a
+                <strong>single central database in one region</strong>, you've
+                created a major problem.
+              </li>
+              <li>
+                User in California → routed to US West API server (fast ✅) →
+                must query database in US East (slow ❌).
+              </li>
+              <li>
+                Net result: same or worse total latency than just sending the
+                user to US East directly.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">The Latency Math</span>
+              Client → US West API: 100ms + US West API → US East DB: 200ms =
+              300ms total. vs. Client → US East API: 200ms + US East API → US
+              East DB: 100ms = 300ms total. Spreading the API layer is pointless
+              if the DB is still far from the API servers.
+            </div>
+
+            <h3>Solution 1 — Multi-Master Database</h3>
+            <ul>
+              <li>
+                Have a database instance in <strong>each region</strong> that
+                can accept writes.
+              </li>
+              <li>
+                West Coast API → West Coast DB (writes & reads). East Coast API
+                → East Coast DB (writes & reads). DBs sync with each other.
+              </li>
+              <li>
+                <strong>Benefit:</strong> writes and reads are low-latency
+                everywhere.
+              </li>
+              <li>
+                <strong>Challenge:</strong> write conflicts, consistency
+                management — covered in future DB videos.
+              </li>
+              <li>
+                Example service:
+                <strong>DynamoDB Global Tables</strong> (handles multi-region
+                write/read natively).
+              </li>
+            </ul>
+
+            <h3>Solution 2 — Read Replicas Per Region</h3>
+            <ul>
+              <li>
+                One primary <strong>write node</strong> (single region) +
+                <strong>read replicas</strong> deployed in each region.
+              </li>
+              <li>
+                All reads served locally (low latency). All writes go to central
+                primary (still some latency for writes).
+              </li>
+              <li>
+                <strong>Best when:</strong> app is read-heavy (social media,
+                news feeds, etc.).
+              </li>
+              <li>
+                Simpler than multi-master but doesn't solve write latency.
+              </li>
+            </ul>
+
+            <h3>Solution 3 — Caching Per Region</h3>
+            <ul>
+              <li>Deploy a <strong>Redis cache</strong> in each region.</li>
+              <li>API reads from local cache first → DB only on cache miss.</li>
+              <li>Dramatically reduces how often the far-away DB is hit.</li>
+              <li>
+                <strong>Best for:</strong> data that doesn't change frequently.
+                Can even cache entire API responses (HTTP caching).
+              </li>
+              <li>Great incremental improvement, easy to implement.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>7. Multi-Region Benefits & Challenges</h2>
+
+            <h3>Benefits</h3>
+            <ul>
+              <li>
+                <strong>Lower Latency</strong> — requests served from
+                geographically nearest server.
+              </li>
+              <li>
+                <strong>Higher Availability</strong> — a regional failure
+                (datacenter fire, network outage) doesn't bring down the whole
+                service.
+              </li>
+              <li>
+                <strong>Independent Scalability</strong> — scale each region's
+                compute based on that region's traffic share.
+              </li>
+              <li>
+                <strong>Disaster Recovery</strong> — can failover traffic
+                between regions if one goes dark.
+              </li>
+            </ul>
+
+            <h3>Challenges</h3>
+            <ul>
+              <li>
+                <strong>Complexity</strong> — GeoDNS setup, inter-region
+                communication, database sync.
+              </li>
+              <li>
+                <strong>Data Transfer Costs</strong> — cloud providers charge
+                for data movement <em>between regions</em> — budget for this.
+              </li>
+              <li>
+                <strong>Service Coordination</strong> — any service calling
+                another service in a different region adds cross-region latency.
+              </li>
+              <li>
+                <strong>Still not truly global</strong> — multiple US regions
+                doesn't help users in Asia or Europe.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>8. Level 4 — Different Continents</h2>
+            <p>
+              Same principles as multi-region, but regions are now in
+              <strong>different continents</strong> — North America, Europe,
+              Asia-Pacific, etc. Latency improvement becomes very significant —
+              a cross-Atlantic request adds hundreds of milliseconds.
+            </p>
+
+            <h3>Data Localization Laws</h3>
+            <p>
+              Once you deploy servers in other countries, you enter
+              <strong>legal and compliance territory</strong> that varies
+              massively by country and data type.
+            </p>
+
+            <ul>
+              <li>
+                <strong
+                  >United States — CUI (Controlled Unclassified
+                  Information)</strong
+                >
+                — sensitive government-related data cannot be stored on servers
+                outside the US. AWS GovCloud exists specifically for these
+                compliance needs.
+              </li>
+              <li>
+                <strong
+                  >Europe — GDPR (General Data Protection Regulation)</strong
+                >
+                — health records, personal data of EU citizens may be required
+                to remain <em>physically within the EU</em>. Non-compliance =
+                fines up to 4% of global revenue.
+              </li>
+              <li>
+                <strong>China</strong> — strong data sovereignty laws. Apps
+                operating in China often need servers physically within China
+                and compliance with local regulations.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Caleb's Note</span>
+              This is not his area of expertise. Do deep research specific to
+              your app's data type and target countries before deploying
+              cross-continent. The consequences of getting this wrong are
+              severe.
+            </div>
+
+            <h3>AWS GovCloud</h3>
+            <ul>
+              <li>
+                Specialized AWS regions for US government/compliance
+                requirements.
+              </li>
+              <li>Higher security standards, restricted access.</li>
+              <li>Used for classified data handling, defense applications.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>9. Multi-Region Failover</h2>
+            <ul>
+              <li>
+                If an entire region goes down, automatically redirect all its
+                traffic to another region.
+              </li>
+              <li>
+                Configured at the GeoDNS/Route 53 level with
+                <strong>health checks + routing policies</strong>.
+              </li>
+              <li>
+                West Coast region dies → Route 53 detects health check failure →
+                reroutes all West Coast clients to East Coast.
+              </li>
+              <li>
+                Users experience <strong>higher latency temporarily</strong> but
+                the service stays up.
+              </li>
+              <li>
+                <strong>No manual intervention needed</strong> if set up
+                correctly.
+              </li>
+              <li>
+                Distinct from normal GeoDNS (which routes by location) —
+                failover routing kicks in
+                <em>only when a health check fails</em>.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>10. CDN — The Global Shortcut</h2>
+            <p>
+              A CDN gives you many benefits of global infrastructure
+              <strong
+                >without the complexity of managing multi-region backend
+                servers</strong
+              >.
+            </p>
+
+            <h3>How CDNs Work in This Context</h3>
+            <ul>
+              <li>
+                CDN providers (Cloudflare, AWS CloudFront) operate
+                <strong>edge servers</strong> spread across every continent.
+              </li>
+              <li>
+                Static files (HTML, CSS, JS, images, videos) are cached on the
+                nearest edge node.
+              </li>
+              <li>
+                A user in Tokyo hits a Tokyo edge node — not your US origin
+                server.
+              </li>
+              <li>
+                On cache miss → edge node fetches from origin, caches it,
+                responds to user.
+              </li>
+            </ul>
+
+            <h3>CDN vs Full Multi-Region Backend</h3>
+            <ul>
+              <li>
+                <strong>CDN</strong> — best for static files and
+                infrequent-change API responses. Low complexity, low cost, no
+                server-side computation.
+              </li>
+              <li>
+                <strong>Multi-Region Servers</strong> — best for dynamic API
+                responses and real-time data. High complexity, high cost, full
+                computation at each edge.
+              </li>
+            </ul>
+
+            <h3>Edge Workers (Advanced CDN Concept)</h3>
+            <ul>
+              <li>
+                Some CDN providers (e.g., <strong>Cloudflare Workers</strong>)
+                allow running <em>actual server-side computation</em> at edge
+                nodes.
+              </li>
+              <li>
+                Not just caching — these are mini-servers at every edge
+                location.
+              </li>
+              <li>
+                Essentially distributes your API layer globally without managing
+                regional infrastructure.
+              </li>
+              <li>
+                Very powerful for low-latency global APIs — worth researching as
+                an alternative to full multi-region.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">When to Add a CDN</span>
+              Add a CDN early — almost first thing after your initial
+              deployment. Benefits are immediate: instant global performance
+              improvement, DDoS protection (built into Cloudflare), SEO
+              improvement, reduced origin server load.
+            </div>
+          </section>
+
+          <section>
+            <h2>11. Full Global Request Flow</h2>
+            <ul>
+              <li><strong>Client</strong> types URL → DNS lookup.</li>
+              <li>
+                <strong>GeoDNS (Route 53)</strong> → routes to nearest region.
+              </li>
+              <li>
+                <strong>CDN Edge Node</strong> → static files served here if
+                cached. Dynamic API requests pass through.
+              </li>
+              <li>
+                <strong>Regional Load Balancer</strong> → routes to available
+                server in healthiest AZ.
+              </li>
+              <li>
+                <strong>Backend Server</strong> → checks local cache first.
+              </li>
+              <li>
+                <strong>Regional Redis Cache</strong> → cache hit: return
+                immediately. Cache miss: hit DB.
+              </li>
+              <li>
+                <strong>Read Replica (local)</strong> or Primary Write DB
+                (possibly remote) → data returned.
+              </li>
+              <li>Response travels back up the chain to the client.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>12. All 4 Levels Summary</h2>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>Level 1</h3>
+                <p>
+                  Same Data Center. Partial HA (node failures only). No latency
+                  improvement.
+                </p>
+                <p class="example">Complexity: Low</p>
+              </div>
+              <div class="tier-card">
+                <h3>Level 2</h3>
+                <p>
+                  Same Region, Multi-AZ. Strong HA (AZ failures). No latency
+                  improvement.
+                </p>
+                <p class="example">Complexity: Low</p>
+              </div>
+              <div class="tier-card">
+                <h3>Level 3</h3>
+                <p>
+                  Multi-Region, same continent. Very strong HA. Moderate latency
+                  improvement.
+                </p>
+                <p class="example">Complexity: Medium-High</p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <span class="callout-label">Level 4</span>
+              Multi-Continent. Maximum HA. Maximum latency improvement for
+              global users. Very High complexity + legal compliance requirements
+              per country.
+            </div>
+          </section>
+
+          <section>
+            <h2>Key Principles to Remember</h2>
+            <ul>
+              <li>
+                <strong>Geolocation routing ≠ load balancing</strong> — they
+                solve different problems (location vs. load distribution).
+              </li>
+              <li>
+                <strong
+                  >Multi-region API is useless without addressing the
+                  database</strong
+                >
+                — the DB is the bottleneck for cross-region latency.
+              </li>
+              <li>
+                <strong>Read replicas are the easiest first DB fix</strong> for
+                multi-region — read-heavy apps benefit most.
+              </li>
+              <li>
+                <strong>CDN first</strong> — get the low-hanging fruit before
+                building complex multi-region architecture.
+              </li>
+              <li>
+                <strong>Edge Workers</strong> = the modern "cheat code" for
+                globally distributed compute without managing full regional
+                infrastructure.
+              </li>
+              <li>
+                <strong>Legal compliance is non-negotiable</strong> — always
+                research data laws before deploying in a new country.
+              </li>
+              <li>
+                <strong>Multi-region failover</strong> = automatic disaster
+                recovery at the geographic level.
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

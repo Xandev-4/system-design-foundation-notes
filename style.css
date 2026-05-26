@@ -1,0 +1,463 @@
+@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap");
+
+/* ─────────────────────────────────────────
+   ASEPRITE-INSPIRED DESIGN SYSTEM
+   Light mode • Pixel-art UI • Silkscreen
+───────────────────────────────────────── */
+
+:root {
+  /* Base palette — classic Aseprite grays */
+  --bg: #c8c3bc;
+  --panel: #dedad4;
+  --panel-light: #f0ece6;
+  --panel-dark: #b0aca6;
+  --border-dark: #5a5650;
+  --border-light: #f4f0ea;
+  --inset-bg: #c0bbb4;
+
+  /* Sidebar */
+  --sidebar-bg: #b8b4ae;
+  --sidebar-active: #7098c0;
+  --sidebar-text: #2a2826;
+
+  /* Accent — Aseprite teal/blue */
+  --accent: #4e7fb8;
+  --accent-hover: #3d6a9e;
+  --accent-light: #d0e0f0;
+  --accent-tag: #e8f0f8;
+
+  /* Text */
+  --text: #1e1c1a;
+  --text-muted: #5a5650;
+  --text-light: #8a8680;
+
+  /* Tags */
+  --tag-bg: #dedad4;
+  --tag-border: #5a5650;
+
+  /* Callout */
+  --callout-bg: #f8f4ec;
+  --callout-border: #4e7fb8;
+  --callout-label-bg: #4e7fb8;
+  --callout-label-text: #ffffff;
+
+  /* Tier cards */
+  --tier1: #a8c8a0;
+  --tier2: #a0b8d8;
+  --tier3: #d8b8a0;
+
+  /* Font */
+  --font: "Silkscreen", monospace;
+
+  /* Pixel border effect (raised panel) */
+  --raised:
+    inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light);
+  --inset:
+    inset 1px 1px 0 var(--border-dark), inset -1px -1px 0 var(--border-light);
+}
+
+/* ── Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Global zoom factor left untouched to keep your preferred scaling */
+  font-size: 12px;
+  zoom: 1.6;
+  image-rendering: pixelated;
+}
+
+body {
+  font-family: var(--font);
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  min-height: 100vh;
+  /* Subtle checker texture like Aseprite's canvas bg */
+  background-image:
+    linear-gradient(45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%);
+  background-size: 8px 8px;
+  background-position:
+    0 0,
+    0 4px,
+    4px -4px,
+    -4px 0;
+}
+
+/* ── Layout ── */
+.layout {
+  display: flex;
+  min-height: 100vh;
+  gap: 0;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 180px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  box-shadow: var(--raised);
+  border-right: 2px solid var(--border-dark);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  font-family: var(--font);
+  font-weight: 400; /* Reduced from 700 to look cleaner */
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+  padding: 10px 10px 8px;
+  border-bottom: 2px solid var(--border-dark);
+  background: var(--panel-dark);
+  box-shadow: inset 0 -1px 0 var(--border-light);
+}
+
+.nav-links {
+  list-style: none;
+  padding: 6px 0;
+}
+
+.nav-links li {
+  margin: 0;
+}
+
+.nav-links a {
+  display: block;
+  font-family: var(--font);
+  font-size: 10px;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  transition: background 0.05s;
+}
+
+.nav-links a:hover {
+  background: var(--panel);
+  border-color: var(--border-dark);
+  box-shadow: var(--raised);
+}
+
+.nav-links li.active a {
+  background: var(--sidebar-active);
+  color: #fff;
+  border: 1px solid var(--border-dark);
+  box-shadow: var(--raised);
+}
+
+/* ── Content Wrapper ── */
+.content-wrapper {
+  flex: 1;
+  padding: 16px;
+  overflow-x: hidden;
+}
+
+/* ── Main Content ── */
+.content {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Topic Header ── */
+.topic-header {
+  background: var(--panel);
+  border: 2px solid var(--border-dark);
+  box-shadow: var(--raised);
+  padding: 14px 16px 12px;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.topic-header::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 400; /* Cleaned up weight for tags */
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background: var(--accent-tag);
+  border: 1px solid var(--accent);
+  padding: 2px 6px;
+  margin-bottom: 8px;
+}
+
+.topic-header h1 {
+  font-family: var(--font);
+  font-weight: 700; /* Kept bold as requested */
+  font-size: 20px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-family: var(--font);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── Sections ── */
+section {
+  background: var(--panel);
+  border: 2px solid var(--border-dark);
+  box-shadow: var(--raised);
+  padding: 14px 16px;
+}
+
+section + section {
+  border-top: none;
+}
+
+section:first-of-type {
+  /* top section: keep top border */
+}
+
+section h2 {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 400; /* Reduced from 700 so subheadings aren't overly aggressive */
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--panel-light);
+  background: var(--border-dark);
+  display: inline-block;
+  padding: 3px 8px;
+  margin-bottom: 12px;
+  margin-left: -16px;
+  padding-left: 16px;
+  width: calc(100% + 32px);
+  border-bottom: 1px solid var(--border-dark);
+}
+
+section h3 {
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 400; /* Softened secondary heading weight */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-top: 16px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--panel-dark);
+}
+
+section p {
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1.8;
+}
+
+/* ── Lists ── */
+ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+ul li {
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--text);
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.7;
+}
+
+ul li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-size: 10px;
+}
+
+/* ── Inline formatting ── */
+strong {
+  font-weight: 400; /* Dropped to 400 so inline highlights rely cleanly on background tint instead of double-bolding */
+  color: var(--text);
+  background: rgba(78, 127, 184, 0.1);
+  padding: 0 2px;
+}
+
+em {
+  font-style: normal;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+/* ── Callout ── */
+.callout {
+  background: var(--callout-bg);
+  border: 2px solid var(--border-dark);
+  box-shadow: var(--inset);
+  padding: 10px 12px;
+  margin: 14px 0;
+  font-family: var(--font);
+  font-size: 10px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  line-height: 1.6;
+  position: relative;
+}
+
+.callout-label {
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 400; /* Softened up the block tag inside callouts */
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--callout-label-text);
+  background: var(--callout-label-bg);
+  padding: 2px 6px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-dark);
+}
+
+/* ── Tier Grid ── */
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 14px 0;
+  border: 2px solid var(--border-dark);
+}
+
+.tier-card {
+  background: var(--panel-light);
+  padding: 12px;
+  border-right: 2px solid var(--border-dark);
+  position: relative;
+}
+
+.tier-card:last-child {
+  border-right: none;
+}
+
+.tier-card:nth-child(1) {
+  border-top: 4px solid var(--tier1);
+}
+.tier-card:nth-child(2) {
+  border-top: 4px solid var(--tier2);
+}
+.tier-card:nth-child(3) {
+  border-top: 4px solid var(--tier3);
+}
+
+.tier-card h3 {
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 400; /* Cleaned weight inside product tier cards */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  margin-top: 0;
+  margin-bottom: 8px;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.tier-card p {
+  font-size: 10px;
+  margin-bottom: 6px;
+  line-height: 1.7;
+}
+
+.tier-card .example {
+  font-family: var(--font);
+  font-size: 9px;
+  color: var(--text-muted);
+  background: var(--inset-bg);
+  border: 1px solid var(--border-dark);
+  box-shadow: var(--inset);
+  padding: 3px 6px;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--panel-dark);
+  border-left: 1px solid var(--border-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--panel);
+  border: 1px solid var(--border-dark);
+  box-shadow: var(--raised);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--inset-bg);
+}
+::-webkit-scrollbar-corner {
+  background: var(--panel-dark);
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .sidebar {
+    display: none;
+  }
+  .tier-grid {
+    grid-template-columns: 1fr;
+  }
+  .tier-card {
+    border-right: none;
+    border-bottom: 2px solid var(--border-dark);
+  }
+  .tier-card:last-child {
+    border-bottom: none;
+  }
+  .topic-header h1 {
+    font-size: 15px;
+  }
+}

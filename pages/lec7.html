@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Replication and Sharding — Database Scaling Deep Dive</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">📚 System Design</div>
+        <ul class="nav-links">
+          <li><a href="lec1.html">1. Intro & MVC</a></li>
+          <li><a href="lec2.html">2. Core Concepts</a></li>
+          <li><a href="lec3.html">3. Scaling to Millions</a></li>
+          <li><a href="lec4.html">4. Scaling Deep Dive</a></li>
+          <li><a href="lec5.html">5. Global Scaling</a></li>
+          <li><a href="lec6.html">6. CAP Theorem</a></li>
+          <li class="active">
+            <a href="lec7.html">7. Replication & Sharding</a>
+          </li>
+          <li><a href="lec8.html">8. NoSQL Deep Dive</a></li>
+        </ul>
+      </nav>
+
+      <div class="content-wrapper">
+        <main class="content">
+          <div class="topic-header">
+            <span class="tag">Lecture 7</span>
+            <h1>Replication and Sharding</h1>
+            <p class="subtitle">
+              Database scaling deep dive — from single node to multi-master and
+              sharded clusters
+            </p>
+          </div>
+
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                A focused deep dive into scaling a single DB into a multi-node
+                cluster using <strong>replication</strong> and
+                <strong>sharding</strong>.
+              </li>
+              <li>
+                Framed around relational databases first (harder to distribute),
+                then extends to NoSQL.
+              </li>
+              <li>
+                Covers the full progression: single node → standby → read
+                replicas → multi-master → sharding.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>1. Start with a Single Relational DB</h2>
+
+            <h3>Default First Step: Vertical Scale</h3>
+            <ul>
+              <li>
+                <strong>Vertically scale</strong> the single database instance
+                first — more CPU, RAM, faster disk.
+              </li>
+              <li>
+                For relational DBs, you want a
+                <strong>powerful single server</strong> — not a bunch of average
+                ones.
+              </li>
+              <li>
+                A single well-provisioned server is adequate for
+                <em>many production use cases</em>.
+              </li>
+              <li>
+                Don't jump to multi-node complexity until you've exhausted what
+                a single node can do.
+              </li>
+            </ul>
+
+            <h3>Reduce Load Before Scaling</h3>
+            <ul>
+              <li>
+                <strong>Redis Caching</strong> — frequently requested data
+                served from memory → fewer DB queries.
+              </li>
+              <li>
+                <strong>Specialized NoSQL DBs</strong> — offload specific
+                workloads (search, sessions, analytics) to purpose-built
+                databases.
+              </li>
+              <li>
+                <strong>Data Warehousing</strong> — move analytics queries to a
+                separate OLAP system.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Key Point</span>
+              These techniques can extend the life of your single database
+              significantly — and are cheaper than multi-node infrastructure.
+              Reduce demand before you scale.
+            </div>
+          </section>
+
+          <section>
+            <h2>2. Specialized NoSQL Databases</h2>
+            <p>
+              NoSQL is not a single type — it's a
+              <strong>category of specialized databases</strong>. Use one or
+              more alongside your main relational DB for specific workloads.
+            </p>
+
+            <ul>
+              <li>
+                <strong>Redis</strong> (In-Memory Cache) — temporary data,
+                sessions, caching frequent reads.
+              </li>
+              <li>
+                <strong>Elasticsearch</strong> (Search Engine DB) — full-text
+                search, complex querying. Offloads search from main DB.
+              </li>
+              <li>
+                <strong>IndexedDB</strong> (Client-Side DB) — browser-local
+                storage for games, settings, offline-first apps. Never hits the
+                server.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Important</span>
+              These are NOT replacements for your main DB. They're targeted
+              tools for specific jobs. Your main relational DB stays as the
+              source of truth — these sit alongside it and handle specialized
+              loads.
+            </div>
+          </section>
+
+          <section>
+            <h2>3. OLTP vs. OLAP</h2>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>OLTP</h3>
+                <p>
+                  Online Transactional Processing. Day-to-day app operations —
+                  CRUD.
+                </p>
+                <p class="example">Creating a user, placing an order</p>
+                <p class="example">PostgreSQL, MySQL</p>
+              </div>
+              <div class="tier-card">
+                <h3>OLAP</h3>
+                <p>
+                  Online Analytical Processing. Analytics, reporting,
+                  aggregations.
+                </p>
+                <p class="example">"Show me all sales in Q3 by region"</p>
+                <p class="example">Redshift, BigQuery, Snowflake</p>
+              </div>
+              <div class="tier-card">
+                <h3>Why Split Them?</h3>
+                <p>
+                  Analytics queries are computationally expensive — full table
+                  scans, big JOINs. Running these on your OLTP DB competes with
+                  regular app traffic.
+                </p>
+                <p class="example">
+                  Move analytics to a dedicated data warehouse
+                </p>
+              </div>
+            </div>
+
+            <ul>
+              <li>
+                Main DB is now free to focus purely on
+                <strong>transactional work</strong> once analytics are
+                offloaded.
+              </li>
+              <li>Next video dives deeper into this split.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>4. High Availability — The Standby Node</h2>
+            <p>
+              After optimizing the single node, the
+              <strong>first multi-node concern is not performance</strong> —
+              it's removing the Single Point of Failure.
+            </p>
+
+            <h3>Standby Node (Hot Failover)</h3>
+            <ul>
+              <li>
+                A <strong>second database instance</strong> that is a live copy
+                of the primary.
+              </li>
+              <li>Data is replicated from primary → standby in real-time.</li>
+              <li>
+                The standby is <strong>not active</strong> — receives no read or
+                write traffic under normal operation.
+              </li>
+              <li>
+                If the primary fails → traffic is automatically redirected to
+                the standby.
+              </li>
+              <li>
+                <strong>Zero (or near-zero) downtime</strong> during failover —
+                users don't notice.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Flow</span>
+              Normal: Primary (R/W) active → Standby silent. After Failure:
+              Primary goes down → Standby becomes new Primary (R/W).
+            </div>
+
+            <h3>How Replication Works (Technical)</h3>
+            <ul>
+              <li>
+                Internally, databases use a
+                <strong>Write-Ahead Log (WAL)</strong> — every operation is
+                logged.
+              </li>
+              <li>
+                This log is used to replay the same operations on the standby.
+              </li>
+              <li>
+                In practice: every incoming write is written to
+                <em>both</em> the primary and standby.
+              </li>
+              <li>
+                This happens <strong>automatically</strong> — your application
+                code doesn't need to write twice.
+              </li>
+            </ul>
+
+            <h3>Standby Node vs. Data Backup</h3>
+            <ul>
+              <li>
+                <strong>Standby Node</strong> — a live running DB instance.
+                Near-instant failover (already running). Purpose: High
+                Availability.
+              </li>
+              <li>
+                <strong>Data Backup</strong> — just a copy of data files. Slow
+                to restore. Purpose: long-term disaster recovery.
+              </li>
+              <li>
+                Both are important and serve different purposes — one is not a
+                substitute for the other.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>5. Why Replication Doesn't Help Write Performance</h2>
+            <p>
+              This is a <strong>common misconception</strong> — important to
+              understand clearly.
+            </p>
+
+            <div class="callout">
+              <span class="callout-label">Key Fact</span>
+              Adding a standby node does NOT increase write throughput.
+            </div>
+
+            <ul>
+              <li>
+                Every write to the primary is also replicated to the standby → 1
+                write operation becomes <strong>2 write operations</strong>.
+              </li>
+              <li>
+                If each node handles 1,000 writes/sec → total system capacity =
+                still ~1,000 writes/sec.
+              </li>
+              <li>
+                The extra compute is consumed by replication itself — it cancels
+                out.
+              </li>
+            </ul>
+
+            <h3>Even in Multi-Master</h3>
+            <ul>
+              <li>
+                Writing to Node A → replicates to Node B (2 writes). Writing to
+                Node B → replicates to Node A (2 writes).
+              </li>
+              <li>
+                Effective write throughput is cut in half — you're back to
+                ~1,000 writes/sec total.
+              </li>
+              <li>
+                <strong>1:1 full replication does not scale writes.</strong>
+              </li>
+              <li>
+                To actually increase write capacity, you need
+                <em>sharding</em> (partial replication) — covered next.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>6. Read Replicas — Scaling Reads</h2>
+            <p>
+              While replication doesn't help writes, it
+              <strong>unlocks horizontal scaling for reads</strong>.
+            </p>
+
+            <ul>
+              <li><strong>All writes</strong> → primary write node only.</li>
+              <li>
+                <strong>All reads</strong> → distributed across read replica
+                nodes.
+              </li>
+              <li>
+                Read replicas receive data via replication from the primary.
+              </li>
+            </ul>
+
+            <h3>Benefits</h3>
+            <ul>
+              <li>
+                <strong>Scale reads independently</strong> — add more read
+                replicas without touching the write node.
+              </li>
+              <li>
+                <strong>Tune compute independently</strong> — write node gets
+                write-optimized specs; read nodes tuned for query performance.
+              </li>
+              <li>
+                <strong>Geographic distribution</strong> — place read replicas
+                in different regions (US, Europe, Asia) to reduce read latency
+                for global users.
+              </li>
+              <li>
+                <strong>Read replicas can also have standbys</strong> — if a
+                replica goes down, its standby takes over (lower priority than
+                primary standby).
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Failover Note</span>
+              If a read replica fails and has no standby, traffic just routes to
+              another read replica — no downtime. That's why read replica
+              standbys are lower priority than the primary write node standby.
+            </div>
+
+            <h3>Eventual Consistency in Read Replicas</h3>
+            <ul>
+              <li>
+                Read replicas are
+                <strong>eventually consistent by default</strong> — replication
+                has a small delay (milliseconds to seconds).
+              </li>
+              <li>
+                Write a blog post → it's on write node instantly. Read
+                immediately from a replica → might not have it yet. Wait a
+                moment → all nodes sync.
+              </li>
+              <li>
+                <strong>Fine for most apps:</strong> social media, blogs,
+                catalogs, feeds.
+              </li>
+              <li>
+                <strong>Not fine for:</strong> banking (stale account balance
+                after a transaction), inventory (showing "in stock" after item
+                sold).
+              </li>
+              <li>
+                <strong>Fix:</strong> configure
+                <em>synchronous replication</em> — write not confirmed until
+                read replica also confirms. Slower, but every read guaranteed
+                up-to-date.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>7. Distributing Read Traffic Across Replicas</h2>
+            <p>
+              When you have multiple read replicas, how do you decide which one
+              handles each read?
+            </p>
+
+            <ul>
+              <li>
+                <strong>Database Load Balancer</strong> (e.g., HAProxy) — sits
+                in front of replicas, routes reads automatically.
+              </li>
+              <li>
+                <strong>Weighted DNS Routing</strong> — DNS-level routing with
+                weights per replica.
+              </li>
+              <li>
+                <strong>Multiple Connection Strings</strong> — app code has
+                multiple connection strings; round-robins between them.
+              </li>
+              <li>
+                <strong>Managed Cloud DB</strong> (e.g., Amazon Aurora) —
+                built-in reader endpoint that load-balances reads automatically.
+              </li>
+            </ul>
+
+            <h3>Amazon Aurora</h3>
+            <ul>
+              <li>PostgreSQL/MySQL-compatible managed database on AWS.</li>
+              <li>
+                Built-in <strong>reader endpoint</strong> that automatically
+                routes reads across replicas.
+              </li>
+              <li>
+                Configurable as <strong>provisioned</strong> (fixed instance
+                size) or <strong>serverless</strong> (pay per usage).
+              </li>
+              <li>Handles most of the clustering complexity for you.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>8. Multi-Master (Active-Active) Clustering</h2>
+
+            <h3>What It Is</h3>
+            <ul>
+              <li>
+                Multiple write nodes — you can write to
+                <strong>any node</strong>.
+              </li>
+              <li>
+                Each write is replicated to <em>some</em> (not all) other nodes.
+              </li>
+              <li>
+                Example: 3-node cluster → write to Node 1 → replicated to Node 2
+                (not Node 3).
+              </li>
+            </ul>
+
+            <h3>Why Partial Replication Helps</h3>
+            <ul>
+              <li>
+                With full 1:1 replication, every write costs double — no net
+                gain.
+              </li>
+              <li>
+                With partial replication across 3 nodes: write to Node 1 →
+                replicated to Node 2 (2 of 3 nodes process it).
+              </li>
+              <li>
+                Net effect: <strong>more total write throughput</strong> because
+                not every write hits every node.
+              </li>
+              <li>
+                This is the underlying principle that makes sharding possible —
+                <em>selective distribution of writes</em>.
+              </li>
+            </ul>
+
+            <h3>Challenges of Multi-Master</h3>
+            <ul>
+              <li>
+                <strong>Write conflicts</strong> — two nodes accept a write to
+                the same record simultaneously → what's the correct value?
+              </li>
+              <li>
+                <strong>Ordering guarantees</strong> — transactions that depend
+                on ordering become complex.
+              </li>
+              <li>
+                <strong>Consistency management</strong> — harder to guarantee
+                all nodes agree.
+              </li>
+              <li>
+                Complex quorum settings — how many nodes must confirm before a
+                write is considered committed.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Caleb's Advice</span>
+              Don't go multi-master until you absolutely need it (enterprise
+              scale). Cache → read replicas → consider NoSQL before going
+              multi-master on a relational DB. NoSQL databases (Cassandra,
+              DynamoDB) are designed for this from the ground up.
+            </div>
+          </section>
+
+          <section>
+            <h2>9. Sharding</h2>
+            <p>
+              Sharding is
+              <strong>splitting data across multiple nodes</strong> where each
+              node holds a different subset of data — unlike full replication
+              where every node has all the data.
+            </p>
+
+            <h3>Full Replication vs. Sharding</h3>
+            <ul>
+              <li>
+                <strong>Full Replication:</strong> Node 1, Node 2, Node 3 → all
+                hold [All Data]. Exact copies.
+              </li>
+              <li>
+                <strong>Sharding:</strong> Node 1 → [Users 1–1M]. Node 2 →
+                [Users 1M–2M]. Node 3 → [Users 2M–3M].
+              </li>
+            </ul>
+
+            <h3>Why Sharding Actually Scales Writes</h3>
+            <ul>
+              <li>
+                Writes go to the appropriate shard based on the data — not all
+                shards.
+              </li>
+              <li>
+                A write to Shard A doesn't replicate to Shards B and C (they
+                don't have that data).
+              </li>
+              <li>
+                You can process genuinely more writes in parallel across shards.
+              </li>
+              <li>
+                <strong
+                  >This is how you actually increase write throughput</strong
+                >
+                — unlike 1:1 replication.
+              </li>
+              <li>
+                Each shard can still use replication internally — but it's only
+                replicating a <em>subset</em> of the data.
+              </li>
+            </ul>
+
+            <h3>Key Sharding Configurations</h3>
+            <ul>
+              <li>
+                <strong>Shard key</strong> — what field determines which shard
+                data goes to (e.g., user ID range).
+              </li>
+              <li>
+                <strong>Replication factor</strong> — how many copies of each
+                shard exist for redundancy.
+              </li>
+              <li>
+                <strong>Quorum settings</strong> — how many nodes must confirm a
+                read/write for it to count.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Coming Up</span>
+              Sharding is covered in much more depth in the upcoming
+              NoSQL-focused videos. NoSQL databases (Cassandra, MongoDB) handle
+              sharding far more gracefully than relational DBs.
+            </div>
+          </section>
+
+          <section>
+            <h2>10. Full DB Scaling Progression</h2>
+            <ul>
+              <li>
+                <strong>Step 1 — Vertical scale the single instance.</strong>
+                Tune CPU, RAM, disk before anything else.
+              </li>
+              <li>
+                <strong>Step 2 — Reduce load.</strong> Add Redis caching,
+                offload specialized workloads to NoSQL, move analytics to OLAP.
+              </li>
+              <li>
+                <strong>Step 3 — Add a standby node.</strong> Removes SPOF,
+                achieves High Availability and automatic failover.
+              </li>
+              <li>
+                <strong>Step 4 — Add read replicas.</strong> Scales reads
+                horizontally, enables geographic distribution of reads.
+              </li>
+              <li>
+                <strong>Step 5 — Tune and add more read replicas.</strong> Scale
+                each independently based on read load.
+              </li>
+              <li>
+                <strong>Step 6 — Multi-master clustering.</strong> Scales
+                writes. Complex, enterprise-level. Consider NoSQL first.
+              </li>
+              <li>
+                <strong>Step 7 — Sharding.</strong> True horizontal partitioning
+                of data. NoSQL-native or complex on relational DBs.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Key Takeaways</h2>
+            <ul>
+              <li>
+                <strong>Vertical scale first</strong> — don't prematurely
+                complicate with multi-node until the single node is well-tuned.
+              </li>
+              <li>
+                <strong>Replication ≠ write scaling</strong> — 1:1 full
+                replication doubles writes per operation; net throughput stays
+                the same.
+              </li>
+              <li>
+                <strong>Replication enables read scaling</strong> — read
+                replicas let you scale reads horizontally.
+              </li>
+              <li>
+                <strong>Standby = HA, not performance</strong> — standby nodes
+                are for failover, not added throughput.
+              </li>
+              <li>
+                <strong>Eventual consistency is the default</strong> for read
+                replicas — synchronous replication is available but adds
+                latency.
+              </li>
+              <li>
+                <strong>Sharding = actual write scaling</strong> — splitting
+                data across nodes so writes don't replicate everywhere.
+              </li>
+              <li>
+                <strong>Multi-master is hard on relational DBs</strong> — NoSQL
+                is better suited for it out of the box.
+              </li>
+              <li>
+                <strong>Don't over-engineer</strong> — cache → read replicas →
+                consider NoSQL before going multi-master on relational.
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

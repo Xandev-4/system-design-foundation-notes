@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Essential System Design Concepts</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">📚 System Design</div>
+        <ul class="nav-links">
+          <li><a href="lec1.html">1. Intro & MVC</a></li>
+          <li class="active"><a href="lec2.html">2. Core Concepts</a></li>
+          <li><a href="lec3.html">3. Scaling to Millions</a></li>
+          <li><a href="lec4.html">4. Scaling Deep Dive</a></li>
+          <li><a href="lec5.html">5. Global Scaling</a></li>
+          <li><a href="lec6.html">6. CAP Theorem</a></li>
+          <li><a href="lec7.html">7. Replication & Sharding</a></li>
+          <li><a href="lec8.html">8. NoSQL Deep Dive</a></li>
+        </ul>
+      </nav>
+
+      <div class="content-wrapper">
+        <main class="content">
+          <div class="topic-header">
+            <span class="tag">Lecture 2</span>
+            <h1>Essential System Design Concepts</h1>
+            <p class="subtitle">
+              Distributed Systems, Availability, Consistency, Scaling & More
+            </p>
+          </div>
+
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                This video is a <strong>foundational overview</strong> of system
+                design terminology.
+              </li>
+              <li>
+                You don't need to master every term deeply — the goal is that
+                when these words show up in future lessons, you already have a
+                <em>mental model</em> for them.
+              </li>
+              <li>
+                Think of it as a <strong>1000-foot view</strong> of everything
+                to come.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>1. Distributed Computing</h2>
+            <ul>
+              <li>
+                Running an application across
+                <strong>multiple computers</strong> (nodes/servers) instead of
+                just one.
+              </li>
+              <li>
+                Not limited to any single layer — applies to the backend,
+                database, frontend, etc.
+              </li>
+              <li>
+                All computers must
+                <strong>work together to produce a single result</strong>.
+              </li>
+              <li>
+                Introduces many new challenges — consistency, availability,
+                fault tolerance, etc.
+              </li>
+              <li>
+                Most of the concepts in this video are built
+                <em>on top of</em> distributed computing.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Example</span>
+              Instead of one server handling all requests, you have 3 servers —
+              each handling part of the load and cooperating.
+            </div>
+          </section>
+
+          <section>
+            <h2>2. High Availability (HA)</h2>
+            <ul>
+              <li>
+                The ability of a service to remain accessible as close to
+                <strong>24/7</strong> as possible.
+              </li>
+              <li>
+                True 100% uptime is <em>impossible</em> — the goal is to get as
+                close as possible.
+              </li>
+              <li>
+                If one node goes down, traffic is
+                <em>automatically rerouted</em> to healthy nodes.
+              </li>
+              <li>
+                <strong>4 nines (99.99%)</strong> is a good baseline benchmark —
+                less than 1 hour downtime/year.
+              </li>
+              <li>
+                For critical systems (medical, financial, military), you'll need
+                more nines.
+              </li>
+              <li>
+                More nines =
+                <strong
+                  >exponentially more cost + implementation complexity</strong
+                >
+                — not just servers, but skilled devs to maintain them.
+              </li>
+            </ul>
+
+            <h3>The Nines Table</h3>
+            <ul>
+              <li><strong>1 nine (90%)</strong> — ~36.5 days downtime/year</li>
+              <li><strong>2 nines (99%)</strong> — ~3.65 days downtime/year</li>
+              <li>
+                <strong>3 nines (99.9%)</strong> — ~8.76 hours downtime/year
+              </li>
+              <li>
+                <strong>4 nines (99.99%)</strong> — ~52.6 minutes downtime/year
+                ✓ target
+              </li>
+              <li>
+                <strong>5 nines (99.999%)</strong> — ~5.26 minutes downtime/year
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>3. Reliability</h2>
+            <ul>
+              <li>
+                A service's ability to
+                <strong>actually do what it's supposed to do</strong> — not just
+                whether it's up, but whether it works correctly.
+              </li>
+              <li>
+                A service can be highly available (99.999% uptime) but have
+                <strong>0% reliability</strong> if it's broken or losing data.
+              </li>
+              <li>
+                Reliability is <em>harder to measure</em> than availability —
+                it's not just nines, it's about defining what correct behavior
+                looks like for your specific app.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Analogy</span>
+              A friend who always picks up your calls (available) but never
+              actually shows up when you need help moving (not reliable). Two
+              different things.
+            </div>
+
+            <h3>Availability vs. Reliability</h3>
+            <ul>
+              <li>
+                <strong>Availability</strong> — can you <em>access</em> the
+                service?
+              </li>
+              <li>
+                <strong>Reliability</strong> — does the service
+                <em>work correctly</em>?
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>4. Consistency</h2>
+            <ul>
+              <li>
+                Every client sees the
+                <strong>same data at the same time</strong> across all nodes.
+              </li>
+              <li>
+                Only becomes a concern in <strong>distributed systems</strong> —
+                on a single server, you're always 100% consistent by default.
+              </li>
+              <li>
+                The problem arises when data written to one node needs to
+                <strong>propagate</strong> to other nodes — there's a window
+                where data can be out of sync.
+              </li>
+            </ul>
+
+            <h3>Strong Consistency</h3>
+            <ul>
+              <li>
+                A write is held in a <em>pending state</em> until
+                <strong>all nodes</strong> have applied it — only then is it
+                confirmed.
+              </li>
+              <li>
+                <strong>Benefit:</strong> all nodes always have the latest data
+                — no stale reads.
+              </li>
+              <li>
+                <strong>Cost:</strong> slower writes — you must wait for
+                propagation to all nodes.
+              </li>
+            </ul>
+
+            <h3>Eventual Consistency</h3>
+            <ul>
+              <li>
+                A write is confirmed <strong>immediately</strong> on the write
+                node, then propagates to other nodes <em>over time</em>.
+              </li>
+              <li>
+                <strong>Benefit:</strong> much faster writes, lower latency.
+              </li>
+              <li>
+                <strong>Cost:</strong> brief window where different clients can
+                see different (stale) data.
+              </li>
+            </ul>
+
+            <h3>When to Use Which</h3>
+            <ul>
+              <li>
+                <strong>Strong consistency →</strong> banking, financial
+                transactions, military, medical real-time data. Stale data could
+                allow double-spending or catastrophic decisions.
+              </li>
+              <li>
+                <strong>Eventual consistency →</strong> social media, basic CRUD
+                apps, content feeds. A post not appearing for 2 seconds is not a
+                big deal.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Heads Up</span>
+              Strong consistency can also harm availability — this ties directly
+              into the CAP Theorem, covered in a future video.
+            </div>
+          </section>
+
+          <section>
+            <h2>5. Scalability</h2>
+            <ul>
+              <li>
+                The ability of an app to
+                <strong>support an increase in workload</strong> — traffic
+                spikes, user growth, seasonal peaks like Black Friday — without
+                breaking.
+              </li>
+              <li>
+                Simplest approach: <strong>over-provisioning</strong> — having
+                more hardware than you typically need so you have headroom.
+              </li>
+              <li>
+                You need to plan for both <strong>typical usage</strong> and
+                <strong>peak usage</strong> (e.g., 8 AM spikes every day).
+              </li>
+            </ul>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>Vertical Scaling</h3>
+                <p>
+                  Add more resources to the <strong>existing server</strong> —
+                  more CPU, RAM, faster storage.
+                </p>
+                <p class="example">aka "scale up"</p>
+                <p class="example">Has a hardware ceiling</p>
+              </div>
+              <div class="tier-card">
+                <h3>Horizontal Scaling</h3>
+                <p>
+                  Add <strong>more servers</strong> running in parallel. Can
+                  combine with vertical scaling.
+                </p>
+                <p class="example">aka "scale out"</p>
+                <p class="example">No hard ceiling, preferred at scale</p>
+              </div>
+              <div class="tier-card">
+                <h3>Elasticity</h3>
+                <p>
+                  Automatically <strong>scale up AND down</strong> based on
+                  current load. Handled by cloud providers.
+                </p>
+                <p class="example">AWS Auto Scaling, etc.</p>
+                <p class="example">Always automatic</p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <span class="callout-label">Key Distinction</span>
+              Scalability ≠ High Availability. A super powerful single server
+              can be highly scalable via vertical scaling and still be a Single
+              Point of Failure if it goes down.
+            </div>
+          </section>
+
+          <section>
+            <h2>6. Elasticity</h2>
+            <ul>
+              <li>
+                The ability of a system to
+                <strong>automatically scale up AND down</strong> based on
+                current workload.
+              </li>
+              <li>
+                Scalability is typically about handling <em>increases</em> in
+                load (sometimes manually) — elasticity does both directions,
+                always automatically.
+              </li>
+              <li>
+                Usually provided by <strong>cloud providers</strong> (AWS, GCP,
+                Azure) — they handle resource allocation behind the scenes via
+                virtualization.
+              </li>
+              <li>
+                No technicians manually adding/removing hardware — the cloud
+                provider pools servers and reallocates virtual resources
+                dynamically.
+              </li>
+            </ul>
+
+            <h3>Scalability vs. Elasticity</h3>
+            <ul>
+              <li>
+                <strong>Scalability</strong> — handles increased workload; can
+                be manual or automatic; typically one direction (up).
+              </li>
+              <li>
+                <strong>Elasticity</strong> — dynamically matches current load;
+                always automatic; scales up AND down.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>7. Single Point of Failure (SPOF)</h2>
+            <ul>
+              <li>
+                Any component in the system that, if it fails,
+                <strong>brings down the entire service</strong> because there's
+                no backup.
+              </li>
+              <li>
+                Like the weakest link in a chain — the chain is only as strong
+                as that one link.
+              </li>
+              <li>
+                Example: frontend and backend have redundancy but the
+                <strong>database does not</strong> → the database is the SPOF.
+              </li>
+              <li>
+                Identifying and eliminating SPOFs is a core task when building
+                highly available systems.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>8. Redundancy</h2>
+            <ul>
+              <li>
+                Having <strong>backup/duplicate components</strong> ready to
+                take over if the primary fails.
+              </li>
+              <li>
+                In everyday life "redundant" = unnecessary.
+                <em>In computing, redundant = good.</em>
+              </li>
+              <li>
+                A <strong>standby server</strong> doesn't handle normal traffic
+                — it only activates if the primary fails.
+              </li>
+              <li>
+                Adds <strong>cost</strong> (maintaining duplicate systems) but
+                greatly improves availability.
+              </li>
+              <li>
+                Redundancy is the primary tool for
+                <strong>eliminating Single Points of Failure</strong>.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Analogy</span>
+              A spare tire — you don't use it every day, but it saves you when
+              you need it.
+            </div>
+          </section>
+
+          <section>
+            <h2>9. Fault Tolerance</h2>
+            <ul>
+              <li>
+                A system's ability to
+                <strong
+                  >continue functioning even when something goes wrong</strong
+                >.
+              </li>
+              <li>Achieved by removing SPOFs — usually via redundancy.</li>
+              <li>
+                If your primary DB fails and the standby is promoted
+                automatically → the system is <em>fault tolerant</em>.
+              </li>
+              <li>
+                Fault Tolerance = the <em>result</em> of designing with
+                redundancy and eliminating SPOFs.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">The Chain</span>
+              Remove SPOF → Add Redundancy → Achieve Fault Tolerance
+            </div>
+          </section>
+
+          <section>
+            <h2>10. Replication</h2>
+            <ul>
+              <li>
+                The process of
+                <strong>creating copies (replicas) of a node/database</strong>
+                so data exists in multiple places.
+              </li>
+              <li>
+                A <strong>node</strong> = one server/computer in a multi-server
+                setup (e.g., one database instance).
+              </li>
+              <li>
+                Replication creates a <strong>duplicate node</strong> from the
+                primary.
+              </li>
+              <li>
+                The standby database in the redundancy example is a replica of
+                the primary.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>11. Database Clusters</h2>
+            <p>
+              A group of <strong>multiple database nodes</strong> working
+              together.
+            </p>
+
+            <h3>Common Setup: Primary/Replica Architecture</h3>
+            <ul>
+              <li>
+                <strong>1 Write (Master/Primary) Node</strong> — handles all
+                write operations.
+              </li>
+              <li>
+                <strong>Multiple Read (Replica) Nodes</strong> — handle read
+                operations only.
+              </li>
+              <li>
+                You can have a <strong>standby write node</strong> for
+                redundancy — idle until the primary fails.
+              </li>
+            </ul>
+
+            <h3>Why This Architecture?</h3>
+            <ul>
+              <li>
+                Most apps are <strong>read-heavy</strong> (~80% reads, ~20%
+                writes).
+              </li>
+              <li>
+                You can scale read nodes independently to handle more read load.
+              </li>
+              <li>
+                Single write node = no write conflict issues (keeps write logic
+                simple).
+              </li>
+            </ul>
+
+            <h3>Multi-Master Setup</h3>
+            <ul>
+              <li>
+                Multiple write nodes = more complexity — write conflicts,
+                ordering issues.
+              </li>
+              <li>
+                Covered in more advanced database clustering topics in later
+                videos.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>12 & 13. Replication Types</h2>
+
+            <h3>Synchronous Replication</h3>
+            <ul>
+              <li>
+                A write is
+                <strong
+                  >not confirmed until ALL replica nodes have written the
+                  data</strong
+                >.
+              </li>
+              <li>Equivalent to <em>strong consistency</em>.</li>
+              <li>Guarantees no stale reads.</li>
+              <li>
+                <strong>Downside:</strong> higher latency — writes take longer.
+              </li>
+            </ul>
+
+            <h3>Asynchronous Replication</h3>
+            <ul>
+              <li>
+                The write is <strong>confirmed immediately</strong> on the
+                primary — replicas receive the data later.
+              </li>
+              <li>Equivalent to <em>eventual consistency</em>.</li>
+              <li><strong>Benefit:</strong> low latency writes.</li>
+              <li>
+                <strong>Downside:</strong> briefly inconsistent — replicas may
+                serve stale data.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Practical Tip</span>
+              Most apps are read-heavy. Use multiple read replicas + single
+              write node. Add a standby write node for redundancy. Use async
+              replication unless your use case requires strong consistency.
+            </div>
+          </section>
+
+          <section>
+            <h2>14. Latency</h2>
+            <ul>
+              <li>
+                The <strong>time from a request to a response</strong> — how
+                long something takes.
+              </li>
+              <li>
+                Can be measured at any level: network latency, DB query latency,
+                API response latency.
+              </li>
+              <li>
+                <strong
+                  >Strong/synchronous consistency increases latency</strong
+                >
+                — writes must wait for propagation.
+              </li>
+              <li>High latency = worse user experience.</li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Example</span>
+              You request a webpage → it loads in 100ms → that 100ms is the
+              latency.
+            </div>
+          </section>
+
+          <section>
+            <h2>15. ACID Properties</h2>
+            <p>
+              A set of <strong>four properties</strong> that relational
+              databases enforce to keep data correct and trustworthy. Most SQL
+              databases (PostgreSQL, MySQL) are ACID compliant by default.
+            </p>
+
+            <div class="callout">
+              <span class="callout-label">Watch Out</span>
+              ACID "consistency" ≠ distributed systems "consistency". Same word,
+              completely different meanings. Don't mix them up in interviews.
+            </div>
+
+            <h3>A — Atomicity</h3>
+            <ul>
+              <li>
+                A transaction is treated as a <strong>single unit</strong> — it
+                either fully succeeds or fully fails.
+              </li>
+              <li>
+                <strong>No partial completions</strong> — if part of a
+                transaction fails, the whole thing is rolled back.
+              </li>
+              <li>
+                Example: Transfer money → deduct from Account A AND credit
+                Account B → if credit fails, deduction is also reversed.
+              </li>
+            </ul>
+
+            <h3>C — Consistency (ACID)</h3>
+            <ul>
+              <li>
+                The database moves from one <strong>valid state</strong> to
+                another valid state.
+              </li>
+              <li>
+                Every change must respect all integrity rules defined in the
+                database.
+              </li>
+              <li>
+                Example: <strong>Referential integrity</strong> — you can't
+                insert a record that references a foreign key that doesn't
+                exist.
+              </li>
+            </ul>
+
+            <h3>I — Isolation</h3>
+            <ul>
+              <li>
+                Concurrent transactions are
+                <strong>isolated from each other</strong> — execute
+                independently as if running sequentially.
+              </li>
+              <li>
+                One transaction's intermediate state is not visible to other
+                transactions.
+              </li>
+              <li>Prevents race conditions and dirty reads.</li>
+            </ul>
+
+            <h3>D — Durability</h3>
+            <ul>
+              <li>
+                Once data is <strong>committed</strong>, it is
+                <em>permanently saved</em> — even if the power goes out
+                immediately after.
+              </li>
+              <li>
+                Committed state = a checkpoint that survives crashes, restarts,
+                and failures.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>16. Sharding</h2>
+            <ul>
+              <li>
+                Splitting a <strong>single database</strong> into multiple
+                smaller pieces (shards) distributed across multiple servers.
+              </li>
+              <li>
+                Used when one database gets too large or handles too much
+                traffic for a single instance.
+              </li>
+              <li>Each shard holds a <strong>subset of the data</strong>.</li>
+              <li>
+                Splits into two types: <em>Vertical Partitioning</em> and
+                <em>Horizontal Partitioning</em>.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>17. Vertical Partitioning</h2>
+            <ul>
+              <li>
+                Splitting a database by <strong>columns</strong> — i.e., by
+                feature or domain.
+              </li>
+              <li>
+                Group related columns into separate tables or even separate
+                databases.
+              </li>
+              <li>
+                Example: User profile data → one database; user payment data →
+                another database.
+              </li>
+              <li>
+                Good for splitting a monolithic DB into
+                <em>microservice-style</em> databases.
+              </li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Structure</span>
+              [User DB] id, name, email — [Orders DB] id, user_id, item —
+              [Payments DB] id, user_id, amount
+            </div>
+          </section>
+
+          <section>
+            <h2>18. Horizontal Partitioning (Sharding)</h2>
+            <ul>
+              <li>
+                Splitting a database by <strong>rows</strong> — the same table
+                structure exists across all shards, but each holds a
+                <em>different subset of rows</em>.
+              </li>
+              <li>
+                Example: Users with IDs 1–1M → Shard A; IDs 1M–2M → Shard B; IDs
+                2M–3M → Shard C.
+              </li>
+              <li>
+                Good for handling massive datasets where one table becomes too
+                large for a single server.
+              </li>
+              <li>Adds complexity — queries across shards are harder.</li>
+            </ul>
+
+            <h3>Vertical vs. Horizontal Partitioning</h3>
+            <ul>
+              <li>
+                <strong>Vertical</strong> — split by columns/features; different
+                schema per partition; separates features/microservices.
+              </li>
+              <li>
+                <strong>Horizontal</strong> — split by rows/data ranges; same
+                schema, different data; handles massive row counts.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Key Tradeoffs to Remember</h2>
+            <ul>
+              <li>
+                <strong>Strong Consistency ↔ Higher Latency</strong> — waiting
+                for all nodes means slower writes.
+              </li>
+              <li>
+                <strong>Eventual Consistency ↔ Stale Data Risk</strong> — faster
+                writes but temporary inconsistency.
+              </li>
+              <li>
+                <strong
+                  >More Nines of Availability ↔ Exponentially More Cost &
+                  Complexity</strong
+                >.
+              </li>
+              <li>
+                <strong>Redundancy ↔ Increased Infrastructure Cost</strong>.
+              </li>
+              <li>
+                <strong
+                  >Strong Consistency ↔ Potentially Lower Availability</strong
+                >
+                — CAP Theorem, covered in future videos.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Quick Recap — All Concepts</h2>
+            <ul>
+              <li>
+                <strong>Distributed Computing</strong> — running a service
+                across multiple machines.
+              </li>
+              <li>
+                <strong>High Availability</strong> — maximizing uptime, measured
+                in nines. Target: 4 nines.
+              </li>
+              <li>
+                <strong>Reliability</strong> — service does what it's supposed
+                to do.
+              </li>
+              <li>
+                <strong>Consistency</strong> — all nodes serve the same data at
+                the same time.
+              </li>
+              <li>
+                <strong>Strong Consistency</strong> — confirmed only after all
+                nodes are updated.
+              </li>
+              <li>
+                <strong>Eventual Consistency</strong> — confirmed immediately;
+                nodes sync later.
+              </li>
+              <li>
+                <strong>Scalability</strong> — ability to handle increased
+                workload.
+              </li>
+              <li>
+                <strong>Vertical Scaling</strong> — upgrade existing server
+                (scale up).
+              </li>
+              <li>
+                <strong>Horizontal Scaling</strong> — add more servers (scale
+                out).
+              </li>
+              <li>
+                <strong>Elasticity</strong> — auto-scale up AND down based on
+                load.
+              </li>
+              <li>
+                <strong>SPOF</strong> — any component with no backup that can
+                take down the whole system.
+              </li>
+              <li>
+                <strong>Redundancy</strong> — backup components ready to replace
+                failed ones.
+              </li>
+              <li>
+                <strong>Fault Tolerance</strong> — system continues working
+                despite failures.
+              </li>
+              <li>
+                <strong>Replication</strong> — copying data/nodes to create
+                redundancy.
+              </li>
+              <li>
+                <strong>Database Cluster</strong> — group of database nodes
+                working together.
+              </li>
+              <li>
+                <strong>Synchronous Replication</strong> — write confirmed only
+                after all replicas acknowledge.
+              </li>
+              <li>
+                <strong>Asynchronous Replication</strong> — write confirmed
+                immediately; replicas sync later.
+              </li>
+              <li><strong>Latency</strong> — time from request to response.</li>
+              <li>
+                <strong>ACID</strong> — Atomicity, Consistency, Isolation,
+                Durability.
+              </li>
+              <li>
+                <strong>Sharding</strong> — splitting a DB across multiple
+                servers for scale.
+              </li>
+              <li>
+                <strong>Vertical Partitioning</strong> — split DB by
+                columns/features.
+              </li>
+              <li>
+                <strong>Horizontal Partitioning</strong> — split DB by rows/data
+                ranges.
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

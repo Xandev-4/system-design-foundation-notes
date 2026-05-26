@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intro to NoSQL Databases — Comprehensive Deep Dive</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">📚 System Design</div>
+        <ul class="nav-links">
+          <li><a href="lec1.html">1. Intro & MVC</a></li>
+          <li><a href="lec2.html">2. Core Concepts</a></li>
+          <li><a href="lec3.html">3. Scaling to Millions</a></li>
+          <li><a href="lec4.html">4. Scaling Deep Dive</a></li>
+          <li><a href="lec5.html">5. Global Scaling</a></li>
+          <li><a href="lec6.html">6. CAP Theorem</a></li>
+          <li><a href="lec7.html">7. Replication & Sharding</a></li>
+          <li class="active"><a href="lec8.html">8. NoSQL Deep Dive</a></li>
+        </ul>
+      </nav>
+
+      <div class="content-wrapper">
+        <main class="content">
+          <div class="topic-header">
+            <span class="tag">Lecture 8</span>
+            <h1>Intro to NoSQL Databases</h1>
+            <p class="subtitle">
+              Why NoSQL exists, the 4 types, quorum consensus, consistent
+              hashing, DynamoDB, and SQL vs NoSQL
+            </p>
+          </div>
+
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                The most in-depth video in the series — a comprehensive
+                introduction to NoSQL databases.
+              </li>
+              <li>
+                Covers <strong>why NoSQL exists</strong>, how data is structured
+                differently, the <strong>4 main types</strong>, cluster
+                distribution mechanics, and a practical DynamoDB breakdown.
+              </li>
+              <li>
+                Ends with a <strong>decision framework</strong> for choosing SQL
+                vs. NoSQL.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>1. Quick SQL Recap</h2>
+            <ul>
+              <li>
+                <strong>SQL</strong> = Structured Query Language — a language
+                standard for communicating with <em>relational databases</em>.
+              </li>
+              <li>
+                "Relational" refers to <strong>tables</strong> (the word
+                "relation" = table in formal DB theory) — not just relationships
+                between tables.
+              </li>
+              <li>
+                Stores data in <strong>rows and columns</strong> with a rigid
+                schema. Every row has the same columns; each cell must have a
+                value (even if NULL).
+              </li>
+              <li>
+                Related data is split across
+                <strong>multiple tables</strong> linked by foreign keys — this
+                is called <em>normalization</em>.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Example</span>
+              [Users Table]: id, name, verified. [Devices Table]: deviceId,
+              userId, device. To get a user with their devices, you JOIN across
+              both tables every time.
+            </div>
+          </section>
+
+          <section>
+            <h2>2. Why NoSQL Exists</h2>
+
+            <h3>The Core Principle</h3>
+            <ul>
+              <li>
+                In relational DBs, data that is logically one unit is spread
+                across <strong>multiple tables</strong>. Every display requires
+                a JOIN.
+              </li>
+              <li>
+                NoSQL flips this:
+                <strong
+                  >"What is accessed together → store it together."</strong
+                >
+              </li>
+              <li>
+                Instead of multiple tables, store an entire
+                <em>nested object</em> as one unit — all data for one entity
+                lives together, no JOIN required.
+              </li>
+            </ul>
+
+            <h3>Why This Matters for Sharding</h3>
+            <ul>
+              <li>
+                In a relational DB with sharding across 3 nodes, a single
+                "course page" query might need to hit
+                <strong>all 3 nodes</strong> (one for course data, one for
+                lessons, one for quizzes).
+              </li>
+              <li>
+                In a NoSQL DB, everything for that course is stored as a single
+                unit → it lives on <strong>exactly one node</strong> — one read,
+                done.
+              </li>
+              <li>
+                This is the core reason NoSQL is described as "more scalable" —
+                it's <em>architectural</em>, not a buzzword.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>3. Schemaless Design</h2>
+            <p>
+              Each document/record can have
+              <strong>different attributes</strong>. Missing attributes are
+              truly absent — not NULL, not empty string, just not there.
+            </p>
+
+            <h3>Pros</h3>
+            <ul>
+              <li>
+                <strong>Rapid prototyping</strong> — just store data as you go,
+                no schema migrations needed.
+              </li>
+              <li>
+                <strong>Easy to add new fields</strong> — just add to new
+                records; old records don't need updating.
+              </li>
+              <li>
+                <strong>Flexible data</strong> — great for user-configurable
+                data (dashboards, plugins, modules with varying data shapes).
+              </li>
+            </ul>
+
+            <h3>Cons</h3>
+            <ul>
+              <li>
+                <strong>Pushes complexity to the app</strong> — you must
+                defensively handle missing fields in every query/render.
+              </li>
+              <li>
+                <strong>Implicit schema still exists</strong> — data follows a
+                pattern anyway, you just don't enforce it.
+              </li>
+              <li>
+                <strong>Harder to trust</strong> — no guarantees required fields
+                exist; "undefined" bugs appear in the UI.
+              </li>
+              <li>
+                <strong>Less benefit of static typing</strong> — you lose
+                compile-time safety in typed languages.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Caleb's Take</span>
+              Schemaless sounds easier but it just moves the work to the
+              application layer. If you need schema flexibility in a relational
+              DB, just store a JSON column — PostgreSQL supports JSONB natively.
+              Get schema flexibility without leaving the relational world.
+            </div>
+          </section>
+
+          <section>
+            <h2>4. Query-Driven Design</h2>
+
+            <h3>Relational DB: Storage-Driven</h3>
+            <ul>
+              <li>Normalize data into tables that make structural sense.</li>
+              <li>
+                Then query flexibly with arbitrary JOINs, WHERE clauses, etc.
+              </li>
+              <li>You don't need to know queries in advance.</li>
+            </ul>
+
+            <h3>NoSQL: Query-Driven</h3>
+            <ul>
+              <li>
+                Ask <strong>"How will I access this data?"</strong> before
+                deciding how to store it.
+              </li>
+              <li>
+                Design the data structure <em>around</em> access patterns.
+              </li>
+              <li>
+                Changing access patterns later may require restructuring data or
+                adding indexes.
+              </li>
+              <li>
+                Less flexible for ad-hoc querying but
+                <strong>highly optimized for known access patterns</strong>.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Mindset Shift</span>
+              With NoSQL you think "this page always needs this data together" →
+              so you store it together. You're pre-optimizing for your specific
+              queries. This is a fundamental shift from how you think about
+              relational design.
+            </div>
+          </section>
+
+          <section>
+            <h2>5. The 4 Types of NoSQL Databases</h2>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>Key-Value</h3>
+                <p>
+                  Key → Value blob. DB has no knowledge of value's internal
+                  structure.
+                </p>
+                <p class="example">Redis, DynamoDB</p>
+                <p class="example">Cache, sessions, lookups</p>
+              </div>
+              <div class="tier-card">
+                <h3>Document</h3>
+                <p>
+                  Key → Rich queryable JSON document. DB understands internal
+                  structure.
+                </p>
+                <p class="example">MongoDB, CouchDB</p>
+                <p class="example">Profiles, content, catalogs</p>
+              </div>
+              <div class="tier-card">
+                <h3>Wide Column</h3>
+                <p>
+                  Row-based but each row has its own set of columns. No NULL
+                  waste.
+                </p>
+                <p class="example">Cassandra, Bigtable, HBase</p>
+                <p class="example">IoT, time-series, event logs</p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <span class="callout-label">4th Type: Graph</span>
+              Stores data as nodes (entities) and edges (relationships).
+              Traversing relationships is built into the storage model — fast
+              even for deep chains. Best for social networks, fraud detection,
+              recommendation engines. Example: Neo4j. Note: Graph DBs are the
+              one NoSQL type that does NOT follow "store together what you
+              access together."
+            </div>
+
+            <h3>Type 1: Key-Value Databases (Detail)</h3>
+            <ul>
+              <li>
+                Based directly on the <strong>hashmap</strong> data structure.
+              </li>
+              <li>
+                Key is run through a <strong>hash function</strong> → produces a
+                fixed-length output → determines exact storage location on disk.
+              </li>
+              <li>
+                Result: <strong>O(1) constant time</strong> reads and writes by
+                key — no searching.
+              </li>
+              <li>
+                Value is <em>opaque</em> — the DB has no knowledge of the
+                value's internal structure. Treated as a black box blob.
+              </li>
+              <li>
+                You can't query inside the value — you retrieve the whole value,
+                manipulate in your app, write it back.
+              </li>
+              <li>
+                <strong>Best for:</strong> session storage, caches, user
+                preferences, feature flags, temporary/ephemeral data.
+              </li>
+              <li>
+                <strong>Redis</strong> — in-memory (data in RAM, not disk) — the
+                canonical caching layer.
+              </li>
+            </ul>
+
+            <h3>Type 2: Document Databases (Detail)</h3>
+            <ul>
+              <li>
+                Like key-value, but the value is a
+                <strong>transparent, queryable document</strong> (JSON-like).
+              </li>
+              <li>
+                The DB <em>understands</em> the structure of the stored document
+                — can query and index nested fields.
+              </li>
+              <li>
+                Example:
+                <code>find users where devices[0].device == "Samsung"</code>
+              </li>
+              <li>
+                Full query language for filtering, sorting, aggregating within
+                documents.
+              </li>
+              <li>
+                <strong>Best for:</strong> content management, user profiles
+                with varying shapes, any app that works naturally with JSON.
+              </li>
+              <li>
+                <strong>MongoDB</strong> — most popular; rich query language,
+                indexing, aggregation pipelines.
+              </li>
+            </ul>
+
+            <h3>Type 3: Wide Column Databases (Detail)</h3>
+            <ul>
+              <li>
+                <strong>Important distinction:</strong> Wide column ≠
+                Column-oriented (columnar) DB. Don't confuse them.
+              </li>
+              <li>
+                <strong>Columnar DBs</strong> (BigQuery, Redshift, ClickHouse)
+                store data by column on disk — used for OLAP/analytics.
+              </li>
+              <li>
+                <strong>Wide column DBs</strong> are still row-based, but each
+                row can have its <em>own set of columns</em>. No NULL waste for
+                missing attributes.
+              </li>
+              <li>
+                Behaves like a map of maps:
+                <code>row_key → { column_name → value }</code>
+              </li>
+              <li>
+                <strong>Apache Cassandra</strong> — scales to tens of thousands
+                of nodes. No master node — truly decentralized. Designed for
+                multi-master writes natively. Optimized for write throughput.
+              </li>
+              <li>
+                Also: Google Bigtable (original), HBase (Hadoop ecosystem),
+                ScyllaDB (Cassandra rewritten in C++ for higher performance).
+              </li>
+            </ul>
+
+            <h3>Type 4: Graph Databases (Detail)</h3>
+            <ul>
+              <li>
+                In relational DBs, traversing relationships requires JOINs —
+                performance degrades with deep chains.
+              </li>
+              <li>
+                In a graph DB, traversing edges is
+                <strong>built into the storage model</strong> — fast even for
+                deep traversals.
+              </li>
+              <li>
+                Example: "find all friends of friends of friends who live in LA
+                and like hiking" — trivial in graph, nightmare in SQL.
+              </li>
+              <li>
+                <strong>Best for:</strong> social networks, recommendation
+                engines, fraud detection, knowledge graphs, network topology.
+              </li>
+              <li>
+                <strong>Neo4j</strong> — most popular; uses Cypher query
+                language.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>6. Aggregate Databases</h2>
+            <ul>
+              <li>
+                Key-value, Document, and Wide Column are all classified as
+                <strong>Aggregate Databases</strong> (Martin Fowler's
+                categorization).
+              </li>
+              <li>
+                <strong>Aggregate</strong> = a logical single unit of
+                information — everything that belongs to one entity.
+              </li>
+              <li>
+                An "Order" with its line items = one aggregate (even though
+                relational DBs would split this).
+              </li>
+              <li>
+                Updates to a single aggregate are <strong>atomic</strong> — the
+                whole thing is saved or none of it is.
+              </li>
+              <li>
+                <strong
+                  >Avoid operations that cross aggregate boundaries</strong
+                >
+                — those introduce consistency risks.
+              </li>
+              <li>
+                Graph databases are excluded — their data is inherently split
+                across nodes and edges.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>7. Quorum Consensus</h2>
+            <p>
+              How NoSQL clusters maintain data integrity across multiple nodes
+              <strong>without a single master</strong>.
+            </p>
+
+            <h3>Three Key Numbers</h3>
+            <ul>
+              <li>
+                <strong>RF (Replication Factor)</strong> — how many nodes store
+                a copy of each piece of data.
+              </li>
+              <li>
+                <strong>W (Write Acknowledgements)</strong> — how many nodes
+                must confirm a write before it's considered successful.
+              </li>
+              <li>
+                <strong>R (Read Acknowledgements)</strong> — how many nodes must
+                respond to a read before it's considered successful.
+              </li>
+            </ul>
+
+            <h3>The Consistency Formula</h3>
+            <ul>
+              <li>
+                <strong
+                  >If W + R &gt; RF → you get strong (consistent) reads.</strong
+                >
+              </li>
+              <li>
+                Why: the write quorum and read quorum <em>overlap</em> — at
+                least 1 node is guaranteed to have the latest write.
+              </li>
+              <li>
+                Example: RF=3, W=2, R=2 → W+R=4 &gt; 3 → any read will always
+                hit at least one node with the most recent data.
+              </li>
+            </ul>
+
+            <h3>Eventual Consistency Config</h3>
+            <ul>
+              <li>
+                W=1, R=1, RF=3 → W+R=2 ≤ 3 → no guaranteed overlap → reads may
+                see stale data.
+              </li>
+              <li>But writes are faster — only need 1 confirmation.</li>
+            </ul>
+
+            <h3>Tunable Consistency</h3>
+            <ul>
+              <li>
+                Cassandra and DynamoDB let you
+                <strong>tune W and R per query</strong>.
+              </li>
+              <li>
+                Crank up W and R for critical operations (banking-level
+                consistency).
+              </li>
+              <li>
+                Drop W and R for high-throughput, latency-sensitive operations
+                (social feeds).
+              </li>
+              <li>
+                This is the "it depends" framework at the <em>query level</em> —
+                extremely powerful.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>8. Consistent Hashing</h2>
+
+            <h3>The Problem It Solves</h3>
+            <ul>
+              <li>
+                Naive approach: <code>node = key % number_of_nodes</code>.
+              </li>
+              <li>
+                If you add or remove a node, the modulo math changes → almost
+                every key maps to a different node →
+                <strong>massive data migration required</strong>.
+              </li>
+            </ul>
+
+            <h3>How It Works</h3>
+            <ul>
+              <li>
+                Imagine a <strong>ring</strong> (circle) where positions are
+                hash values from 0 to max.
+              </li>
+              <li>
+                Both nodes AND data keys are placed on this ring using a hash
+                function.
+              </li>
+              <li>
+                Data is assigned to the
+                <strong>nearest node clockwise</strong> from its position on the
+                ring.
+              </li>
+              <li>
+                <strong>Adding a node:</strong> only the keys between the new
+                node and its predecessor need to move. All other keys stay in
+                place.
+              </li>
+              <li>
+                <strong>Removing a node:</strong> only that node's keys move to
+                the next node clockwise. Everything else is unaffected.
+              </li>
+              <li>
+                Result: <strong>minimizes data migration</strong> — only a
+                fraction of keys are remapped.
+              </li>
+            </ul>
+
+            <h3>Virtual Nodes (Vnodes)</h3>
+            <ul>
+              <li>
+                Each physical node is assigned
+                <strong>multiple virtual positions</strong> on the ring.
+              </li>
+              <li>
+                More powerful node → more virtual nodes → handles more data
+                proportionally.
+              </li>
+              <li>
+                Balances load intelligently across heterogeneous hardware.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Together</span>
+              Consistent hashing + quorum consensus is how Cassandra and
+              DynamoDB handle distribution at massive scale without a central
+              coordinator.
+            </div>
+          </section>
+
+          <section>
+            <h2>9. Auto-Increment IDs in Distributed Systems</h2>
+            <p>
+              In relational DBs, auto-increment IDs are simple — one DB, one
+              sequence. In a distributed cluster, multiple nodes generate IDs
+              simultaneously → <strong>ID collisions are possible.</strong>
+            </p>
+
+            <h3>Solution 1: UUIDs</h3>
+            <ul>
+              <li>
+                <strong>UUID</strong> = 128-bit random value (e.g.,
+                <code>550e8400-e29b-41d4-a716-446655440000</code>).
+              </li>
+              <li>Probability of collision is astronomically low.</li>
+              <li>
+                <strong>Pros:</strong> no coordination needed between nodes —
+                each generates its own.
+              </li>
+              <li>
+                <strong>Cons:</strong> not sortable by time, larger storage than
+                integers, less human-readable in logs.
+              </li>
+            </ul>
+
+            <h3>Solution 2: Snowflake IDs (Twitter)</h3>
+            <ul>
+              <li>
+                A 64-bit integer composed of:
+                <strong
+                  >[41 bits: timestamp (ms)] [10 bits: machine ID] [12 bits:
+                  sequence]</strong
+                >.
+              </li>
+              <li>
+                <strong>Timestamp</strong> → enables
+                <em>time-sorted ordering</em> (newest records have highest IDs).
+              </li>
+              <li>
+                <strong>Machine ID</strong> → different machines generate
+                different IDs even at the same millisecond.
+              </li>
+              <li>
+                <strong>Sequence</strong> → handles multiple IDs on the same
+                machine in the same millisecond.
+              </li>
+              <li>
+                <strong>Pros:</strong> sortable by time, compact (64-bit), no
+                central coordination, numeric.
+              </li>
+              <li>
+                <strong>Cons:</strong> requires each node to know its machine
+                ID; clock drift across servers can cause issues (NTP sync
+                matters).
+              </li>
+              <li>
+                <strong>Used by:</strong> Twitter (original Snowflake), Discord,
+                Instagram, many distributed systems at scale.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>10. DynamoDB Deep Dive</h2>
+            <p>
+              AWS's managed NoSQL database — a
+              <strong>key-value + document hybrid</strong>. Very common in
+              production and system design interviews.
+            </p>
+
+            <h3>Partition Key (Primary Key)</h3>
+            <ul>
+              <li>Every item <strong>must</strong> have a partition key.</li>
+              <li>
+                Partition key is run through a hash function → determines which
+                <em>partition (shard)</em> the item lives on.
+              </li>
+              <li>
+                Simple lookup:
+                <code>GET item WHERE partition_key = "user:42"</code> → O(1)
+                access.
+              </li>
+              <li>
+                <strong>Design principle:</strong> choose a partition key with
+                <em>high cardinality</em> to distribute data evenly. A key like
+                "country" with only 3 values creates hot partitions.
+              </li>
+            </ul>
+
+            <h3>Sort Key (Optional)</h3>
+            <ul>
+              <li>
+                When partition key alone isn't unique enough, add a
+                <strong>sort key</strong>.
+              </li>
+              <li>
+                The combination of <code>partition_key + sort_key</code> must be
+                unique.
+              </li>
+              <li>
+                Items with the same partition key are stored
+                <strong>together on the same shard</strong>, sorted by sort key.
+              </li>
+              <li>
+                Enables range queries within a partition:
+                <code
+                  >WHERE partition_key = "user:42" AND sort_key BETWEEN
+                  "2024-01" AND "2024-12"</code
+                >
+              </li>
+              <li>
+                Common pattern:
+                <code>partition_key = userId, sort_key = timestamp</code> → all
+                activity for a user on one shard, sorted by time.
+              </li>
+            </ul>
+
+            <h3>Secondary Indexes</h3>
+            <ul>
+              <li>
+                <strong>GSI (Global Secondary Index)</strong> — new index with a
+                different partition key (and optional sort key). Queries fan out
+                across all shards. Enables flexible access patterns beyond the
+                primary key. Costs more (storage + read/write capacity).
+              </li>
+              <li>
+                <strong>LSI (Local Secondary Index)</strong> — same partition
+                key, different sort key. Queries constrained to a single
+                partition. Must be defined at table creation time — can't add
+                later.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>11. SQL vs. NoSQL — Decision Framework</h2>
+
+            <h3>Use SQL (Relational) When</h3>
+            <ul>
+              <li>
+                <strong>Data is highly relational</strong> — many entities with
+                complex relationships requiring arbitrary JOINs.
+              </li>
+              <li>
+                <strong>Schema is stable and well-defined</strong> — you know
+                the structure upfront.
+              </li>
+              <li>
+                <strong>Ad-hoc querying is important</strong> — you don't know
+                all access patterns in advance.
+              </li>
+              <li>
+                <strong>Strong ACID transactions required</strong> across
+                multiple entities.
+              </li>
+              <li>
+                <strong>Team is familiar with SQL</strong> — decades of tooling,
+                documentation, expertise.
+              </li>
+              <li>
+                <strong>Scale is moderate</strong> — vertical + read replicas
+                gets you very far before needing to shard.
+              </li>
+            </ul>
+
+            <h3>Use NoSQL When</h3>
+            <ul>
+              <li>
+                <strong>Data is naturally a single unit</strong> — everything
+                you access together belongs together.
+              </li>
+              <li>
+                <strong>Write-heavy workload at massive scale</strong> —
+                especially wide-column DBs (Cassandra).
+              </li>
+              <li>
+                <strong>Flexible/evolving schema</strong> — data structure
+                varies per record or changes frequently.
+              </li>
+              <li>
+                <strong>You know your access patterns</strong> — you can design
+                around them upfront.
+              </li>
+              <li>
+                <strong>Horizontal scaling is critical</strong> — NoSQL handles
+                sharding + multi-master natively.
+              </li>
+              <li>
+                Specific use cases: caching → Redis; social graphs → Neo4j;
+                full-text search → Elasticsearch; event streams/IoT → Cassandra;
+                content/catalogs → MongoDB.
+              </li>
+            </ul>
+
+            <h3>The "Not Either/Or" Reality</h3>
+            <ul>
+              <li>
+                Most production systems use <strong>both</strong> — a relational
+                DB for transactional core data + specialized NoSQL for specific
+                workloads.
+              </li>
+              <li>
+                Example: PostgreSQL (main app) + Redis (caching) + Elasticsearch
+                (search) + Cassandra (event feed) + Neo4j (recommendations).
+              </li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Don't Over-NoSQL</span>
+              Don't switch your entire DB to NoSQL just because it sounds
+              scalable. A JSONB column in PostgreSQL handles most "I need schema
+              flexibility" cases perfectly. Only reach for NoSQL when you have a
+              concrete, specific reason.
+            </div>
+          </section>
+
+          <section>
+            <h2>NoSQL Types Quick Reference</h2>
+            <ul>
+              <li>
+                <strong>Key-Value</strong> — best for cache, sessions, simple
+                lookups. Redis, DynamoDB. CAP: AP.
+              </li>
+              <li>
+                <strong>Document</strong> — best for JSON objects, content,
+                profiles. MongoDB, CouchDB. CAP: AP/CP (tunable).
+              </li>
+              <li>
+                <strong>Wide Column</strong> — best for high write throughput,
+                IoT, time-series. Cassandra, Bigtable, HBase. CAP: AP.
+              </li>
+              <li>
+                <strong>Graph</strong> — best for relationships, social
+                networks, fraud detection. Neo4j. CAP: CP.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Key Takeaways</h2>
+            <ul>
+              <li>
+                <strong
+                  >NoSQL = "store together what you access together"</strong
+                >
+                — that's the core design philosophy.
+              </li>
+              <li>
+                <strong>Schemaless shifts work to the app layer</strong> — not
+                inherently easier.
+              </li>
+              <li>
+                <strong>Query-driven design</strong> — think access patterns
+                first, then data structure.
+              </li>
+              <li>
+                <strong>Aggregate pattern</strong> — single unit reads/writes =
+                atomic + shard-friendly.
+              </li>
+              <li>
+                <strong
+                  >Quorum formula: W + R &gt; RF → strong consistency.</strong
+                >
+                Otherwise eventual.
+              </li>
+              <li>
+                <strong>Consistent hashing</strong> = efficient key distribution
+                with minimal data movement on cluster changes.
+              </li>
+              <li>
+                <strong>Snowflake IDs &gt; UUIDs</strong> for time-sortable
+                distributed IDs.
+              </li>
+              <li>
+                <strong>DynamoDB:</strong> partition key → shard placement; sort
+                key → range queries within partition; GSI/LSI → flexible access
+                patterns.
+              </li>
+              <li>
+                <strong>Use both SQL and NoSQL</strong> — SQL for core
+                transactions, NoSQL for specialized workloads.
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
