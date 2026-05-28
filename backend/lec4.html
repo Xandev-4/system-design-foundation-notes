@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lec 4 — Routing in Backend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ── Top Bar ── -->
+    <header class="topbar">
+      <button class="topbar-menu-btn" id="menuBtn" aria-expanded="true" aria-label="Toggle sidebar">
+        ☰ Menu
+      </button>
+      <div class="topbar-divider"></div>
+      <div class="topbar-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="topbar-title">Backend<span>Engineering</span></div>
+      <div class="topbar-breadcrumb">
+        <span>Lec 4</span>
+        <span class="sep">›</span>
+        <span class="current" id="breadcrumbCurrent">What is Routing?</span>
+      </div>
+      <button class="topbar-theme-btn" id="themeBtn">☀ Light</button>
+    </header>
+
+    <!-- ── Layout ── -->
+    <div class="layout">
+      <nav class="sidebar" id="sidebar" aria-label="Course navigation"></nav>
+      <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+      <main class="content-wrapper">
+        <div class="content">
+
+          <!-- Topic Header -->
+          <div class="topic-header">
+            <div class="tag">Lecture 4</div>
+            <h1>What is Routing in Backend?</h1>
+            <p class="subtitle">How requests find their handler — static paths, dynamic params, query params, versioning, and catch-alls.</p>
+          </div>
+
+          <!-- 1. What is Routing? -->
+          <section id="what-is-routing">
+            <h2>What is Routing?</h2>
+            <p>
+              HTTP methods express the <strong>what</strong> of a request — your intent, your action. Routing expresses the <strong>where</strong> — which resource or address on the server you want to perform that action on.
+            </p>
+            <p>
+              The combination of an HTTP method and a URL path forms a <strong>unique key</strong>. The server matches this key against its registered routes and executes the corresponding handler.
+            </p>
+            <ul>
+              <li><em>GET /api/books</em> and <em>POST /api/books</em> are two entirely different routes — the method differentiates them</li>
+              <li>The server checks the method first, then the path, concatenates them into a unique route key, and dispatches to the matching handler</li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Definition</span>
+              Routing is the mapping of a method + URL path combination to a specific server-side handler function.
+            </div>
+          </section>
+
+          <!-- 2. Static Routes -->
+          <section id="static-routes">
+            <h2>Static Routes</h2>
+            <p>
+              A static route has a <strong>fixed, constant path string</strong> — nothing in the path changes between requests. The server always maps this exact string to the same handler.
+            </p>
+            <ul>
+              <li><em>GET /api/books</em> — always fetches all books</li>
+              <li><em>POST /api/books</em> — always creates a new book</li>
+              <li>The path <em>/api/books</em> is a constant — it never changes regardless of who calls it</li>
+            </ul>
+          </section>
+
+          <!-- 3. Dynamic Routes & Path Parameters -->
+          <section id="dynamic-routes">
+            <h2>Dynamic Routes &amp; Path Parameters</h2>
+            <p>
+              A dynamic route has a <strong>variable slot</strong> in the path — a placeholder the server fills at runtime with whatever value the client sent. These slots are called <em>path parameters</em> or <em>route parameters</em>.
+            </p>
+            <ul>
+              <li>Convention: <em>/api/users/:id</em> — the <em>:id</em> accepts any string value</li>
+              <li>When <em>GET /api/users/123</em> arrives, the server extracts <em>123</em> as the value of <em>id</em></li>
+              <li>Even numbers are treated as <strong>strings</strong> inside path parameters</li>
+              <li>This <em>:param</em> convention is universal — Go, Node.js, Python, Java, Rust all use it</li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Readability</span>
+              <em>GET /api/users/123</em> reads as: "fetch me data, for users, whose ID is 123." That human-readable semantic expression is the whole point of REST-style routing.
+            </div>
+          </section>
+
+          <!-- 4. Query Parameters -->
+          <section id="query-params">
+            <h2>Query Parameters</h2>
+            <p>
+              Query parameters are <strong>key-value pairs</strong> appended to a URL after a <em>?</em> symbol. They are not part of route matching — the server uses only the path before the <em>?</em> to identify the handler. Query params are extra metadata sent alongside the request.
+            </p>
+
+            <h3>● Why Query Parameters Exist</h3>
+            <p>
+              POST and PUT requests have a <strong>body</strong> — a container to send user-defined data to the server. GET requests have no body. So when you need to pass extra information with a GET request (like a search term, a page number, or a sort order), query parameters fill that gap.
+            </p>
+            <p>
+              You could technically put everything in path parameters, but that defeats the semantic purpose of paths. <em>/api/search/some-value</em> loses meaning fast. <em>/api/search?query=some-value</em> is far cleaner.
+            </p>
+
+            <h3>● Structure</h3>
+            <ul>
+              <li>Starts with <em>?</em> after the path</li>
+              <li>Key-value pairs separated by <em>=</em></li>
+              <li>Multiple params chained with <em>&amp;</em></li>
+              <li>Example: <em>/api/books?page=2&amp;limit=20&amp;sort=asc</em></li>
+            </ul>
+
+            <h3>● Common Use Cases</h3>
+            <ul>
+              <li><strong>Pagination</strong> — <em>?page=2&amp;limit=20</em>; server returns chunk of data for that page</li>
+              <li><strong>Filtering</strong> — <em>?status=active&amp;role=admin</em></li>
+              <li><strong>Sorting</strong> — <em>?sort=createdAt&amp;order=desc</em></li>
+              <li><strong>Search</strong> — <em>?query=backend+engineering</em></li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Path Params vs Query Params</span>
+              Use <strong>path parameters</strong> to <em>identify</em> a specific resource. Use <strong>query parameters</strong> to <em>modify, filter, or add metadata</em> to what you get back.
+            </div>
+          </section>
+
+          <!-- 5. Nested Routes -->
+          <section id="nested-routes">
+            <h2>Nested Routes</h2>
+            <p>
+              Nesting is not a distinct route type — it's a <strong>practice</strong> you'll see everywhere in REST APIs. It expresses hierarchical relationships between resources through increasingly specific URL paths.
+            </p>
+            <ul>
+              <li><em>/api/users</em> — all users</li>
+              <li><em>/api/users/:userId</em> — one specific user</li>
+              <li><em>/api/users/:userId/posts</em> — all posts of that user</li>
+              <li><em>/api/users/:userId/posts/:postId</em> — one specific post of that user</li>
+            </ul>
+            <p>
+              Each level is its own unique route with its own handler. Stopping at different levels returns different data — <em>/users/123/posts</em> returns all posts, <em>/users/123/posts/456</em> returns one specific post.
+            </p>
+            <div class="callout">
+              <span class="callout-label">Best Practice</span>
+              Don't go beyond 2–3 levels of nesting. Deep nesting becomes hard to read and maintain. Keep it flat where possible.
+            </div>
+          </section>
+
+          <!-- 6. Versioning & Deprecation -->
+          <section id="versioning">
+            <h2>Route Versioning &amp; Deprecation</h2>
+            <p>
+              APIs evolve. When you need to introduce <strong>breaking changes</strong> — changing response shapes, renaming fields, restructuring data — you can't just update the existing route because every existing client will break instantly.
+            </p>
+
+            <h3>● URI Versioning</h3>
+            <p>
+              Embed the version number directly in the path. Both versions run simultaneously — clients migrate at their own pace.
+            </p>
+            <ul>
+              <li><em>/api/v1/products</em> — original response shape (e.g. <em>{ id, name, price }</em>)</li>
+              <li><em>/api/v2/products</em> — new response shape (e.g. <em>{ id, title, price }</em>)</li>
+            </ul>
+
+            <h3>● Deprecation Workflow</h3>
+            <ul>
+              <li>Release <em>v2</em> alongside <em>v1</em> — nothing breaks on day one</li>
+              <li>Notify all frontend and mobile engineers of the deprecation window</li>
+              <li>Teams migrate their calls from <em>v1</em> to <em>v2</em> within that window</li>
+              <li>After the window closes, sunset <em>v1</em> — redirect or remove it</li>
+              <li>Eventually rename <em>v2</em> to <em>v1</em> — the cycle resets</li>
+            </ul>
+          </section>
+
+          <!-- 7. Catch-All Routes -->
+          <section id="catch-all">
+            <h2>Catch-All Routes</h2>
+            <p>
+              A catch-all route is registered <strong>last</strong> in the route list. It matches any request that didn't match any defined route — and returns a clean, user-friendly 404 response instead of a null or crash.
+            </p>
+            <ul>
+              <li>Pattern: <em>/*</em> — matches everything</li>
+              <li>Without this, unmatched routes return a null response by default — no useful error for the client</li>
+              <li>The catch-all handler returns a proper message: <em>"This route does not exist"</em></li>
+              <li>Must always be the <strong>last registered route</strong> — otherwise it swallows legitimate routes</li>
+            </ul>
+          </section>
+
+        </div>
+      </main>
+    </div>
+
+    <!-- ── Status Bar ── -->
+    <footer class="statusbar">
+      <div class="statusbar-item">
+        <span class="dot"></span>
+        Backend Engineering
+      </div>
+      <div class="statusbar-item">7 topics</div>
+      <div class="statusbar-spacer"></div>
+      <div class="statusbar-item" id="statusTheme">Light Mode</div>
+      <div class="statusbar-item" id="statusTime">00:00</div>
+    </footer>
+
+    <!-- ── Scripts ── -->
+    <script>const CURRENT_LECTURE = "routing";</script>
+    <script src="script.js"></script>
+    <script src="sidebar.js"></script>
+  </body>
+</html>

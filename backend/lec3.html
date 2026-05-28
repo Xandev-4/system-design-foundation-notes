@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lec 3 — Understanding HTTP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ── Top Bar ── -->
+    <header class="topbar">
+      <button class="topbar-menu-btn" id="menuBtn" aria-expanded="true" aria-label="Toggle sidebar">
+        ☰ Menu
+      </button>
+      <div class="topbar-divider"></div>
+      <div class="topbar-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="topbar-title">Backend<span>Engineering</span></div>
+      <div class="topbar-breadcrumb">
+        <span>Lec 3</span>
+        <span class="sep">›</span>
+        <span class="current" id="breadcrumbCurrent">HTTP Intro</span>
+      </div>
+      <button class="topbar-theme-btn" id="themeBtn">☀ Light</button>
+    </header>
+
+    <!-- ── Layout ── -->
+    <div class="layout">
+      <nav class="sidebar" id="sidebar" aria-label="Course navigation"></nav>
+      <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+      <main class="content-wrapper">
+        <div class="content">
+
+          <!-- Topic Header -->
+          <div class="topic-header">
+            <div class="tag">Lecture 3</div>
+            <h1>Understanding HTTP for Backend Engineers</h1>
+            <p class="subtitle">A deep dive into HTTP — the medium through which browsers talk to servers.</p>
+          </div>
+
+          <!-- 1. HTTP Fundamentals -->
+          <section id="http-intro">
+            <h2>HTTP Fundamentals</h2>
+            <p>
+              HTTP is the protocol through which browsers communicate with servers — either to send data or receive it. Two core ideas are at the heart of every HTTP interaction.
+            </p>
+
+            <h3>● Statelessness</h3>
+            <p>
+              HTTP has <strong>no memory of past interactions</strong>. Each request is self-contained and carries all the information the server needs — headers, URL, method, body. After responding, the server forgets the request entirely.
+            </p>
+            <ul>
+              <li><strong>Simplicity</strong> — server does not need to store session state, reducing complexity</li>
+              <li><strong>Scalability</strong> — requests can be distributed across any server since none of them track session state</li>
+              <li><strong>Fault Tolerance</strong> — if a server crashes, no client state is lost because there was none</li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Practical Note</span>
+              Because HTTP is stateless, developers layer state management on top — cookies, sessions, and tokens — to maintain continuity for things like user logins and shopping carts.
+            </div>
+
+            <h3>● Client–Server Model</h3>
+            <ul>
+              <li><strong>Client</strong> — browser or app that <em>always initiates</em> the communication by sending a request</li>
+              <li><strong>Server</strong> — hosts resources and waits for incoming requests; never initiates contact</li>
+              <li>Communication is always <strong>request → response</strong>, never the other way</li>
+            </ul>
+
+            <h3>● HTTP &amp; TCP</h3>
+            <p>
+              HTTP does not require the transport layer to be connection-based, only <strong>reliable</strong>. Among TCP and UDP, TCP is more reliable — so HTTP uses TCP. This sits at <em>Layer 7 (Application Layer)</em> of the OSI model; TCP handshakes and TLS encryption live in the layers below.
+            </p>
+          </section>
+
+          <!-- 2. Evolution of HTTP -->
+          <section id="http-versions">
+            <h2>Evolution of HTTP</h2>
+            <p>
+              Each version of HTTP redefined how clients and servers exchange data, chasing better performance and lower latency.
+            </p>
+
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>HTTP / 1.0</h3>
+                <p>Each request opened a <strong>new TCP connection</strong>. Connection was established and torn down for every single request — very inefficient.</p>
+                <div class="example">Problem: high overhead per request</div>
+              </div>
+              <div class="tier-card">
+                <h3>HTTP / 1.1</h3>
+                <p>Introduced <strong>persistent connections</strong> — multiple requests/responses over a single TCP connection. Also added chunked transfer encoding and better caching.</p>
+                <div class="example">Still the most widely used version today</div>
+              </div>
+              <div class="tier-card">
+                <h3>HTTP / 2.0</h3>
+                <p>Added <strong>multiplexing</strong> — multiple requests over one connection simultaneously. Uses binary framing, header compression (HPACK), and server push.</p>
+                <div class="example">Still TCP-based; head-of-line blocking persists</div>
+              </div>
+            </div>
+            <div class="callout">
+              <span class="callout-label">HTTP / 3.0</span>
+              Built on <strong>QUIC</strong> — a transport protocol over UDP instead of TCP. Faster connection setup, reduced latency, better packet loss handling, and multiplexing without head-of-line blocking.
+            </div>
+          </section>
+
+          <!-- 3. HTTP Messages -->
+          <section id="http-messages">
+            <h2>HTTP Messages</h2>
+            <p>
+              Every HTTP interaction consists of a <strong>request message</strong> (sent by the client) and a <strong>response message</strong> (sent by the server).
+            </p>
+
+            <h3>● Request Message Structure</h3>
+            <ul>
+              <li><strong>Method</strong> — the action type (GET, POST, PUT, etc.)</li>
+              <li><strong>Resource URL</strong> — the path being requested</li>
+              <li><strong>HTTP Version</strong> — e.g. <em>HTTP/1.1</em></li>
+              <li><strong>Host</strong> — the domain of the server</li>
+              <li><strong>Headers</strong> — key-value metadata about the request</li>
+              <li><strong>Blank line</strong> — signals end of headers</li>
+              <li><strong>Body</strong> — optional; data the client sends to the server</li>
+            </ul>
+
+            <h3>● Response Message Structure</h3>
+            <ul>
+              <li><strong>HTTP Version</strong> — version used</li>
+              <li><strong>Status Code + Text</strong> — e.g. <em>200 OK</em></li>
+              <li><strong>Response Headers</strong> — metadata about the response</li>
+              <li><strong>Blank line</strong> — signals end of headers</li>
+              <li><strong>Response Body</strong> — the actual resource or data returned</li>
+            </ul>
+          </section>
+
+          <!-- 4. HTTP Headers -->
+          <section id="http-headers">
+            <h2>HTTP Headers</h2>
+            <p>
+              Headers are <strong>key-value pairs</strong> of metadata sent alongside requests and responses. Think of them like the label written on a parcel — the delivery person reads it without opening the package.
+            </p>
+
+            <h3>● Types of Headers</h3>
+            <ul>
+              <li><strong>Request Headers</strong> — sent by the client to describe itself and its preferences; e.g. <em>User-Agent</em>, <em>Authorization</em>, <em>Accept</em></li>
+              <li><strong>General Headers</strong> — used in both requests and responses; metadata about the message itself; e.g. <em>Date</em>, <em>Cache-Control</em>, <em>Connection</em></li>
+              <li><strong>Representation Headers</strong> — describe the body being transmitted; e.g. <em>Content-Type</em>, <em>Content-Length</em>, <em>Content-Encoding</em>, <em>ETag</em></li>
+              <li><strong>Security Headers</strong> — control browser behaviour to defend against attacks; e.g. <em>HSTS</em>, <em>Content-Security-Policy</em>, <em>X-Frame-Options</em>, <em>X-Content-Type-Options</em></li>
+            </ul>
+
+            <h3>● Two Key Ideas</h3>
+            <ul>
+              <li><strong>Extensibility</strong> — headers can be added or customised without changing the underlying protocol; developers can create custom headers like <em>X-Custom-Header</em></li>
+              <li><strong>Remote Control</strong> — headers let the client send instructions to the server; <em>Accept</em> tells the server what format to return, <em>Authorization</em> controls access, <em>Cache-Control</em> controls caching</li>
+            </ul>
+          </section>
+
+          <!-- 5. HTTP Methods -->
+          <section id="http-methods">
+            <h2>HTTP Methods</h2>
+            <p>
+              Methods define the <strong>intent</strong> of a request — not just what resource is being accessed, but what action should be performed on it.
+            </p>
+
+            <h3>● Core Methods</h3>
+            <ul>
+              <li><strong>GET</strong> — fetch data; must not modify anything on the server</li>
+              <li><strong>POST</strong> — create a new resource; has a request body</li>
+              <li><strong>PATCH</strong> — partial update; selectively replaces fields in the resource</li>
+              <li><strong>PUT</strong> — complete replacement; the request body fully replaces the existing resource</li>
+              <li><strong>DELETE</strong> — remove a resource from the server</li>
+            </ul>
+
+            <div class="callout">
+              <span class="callout-label">Rule of Thumb</span>
+              Always use <strong>PATCH</strong> for updates unless you specifically need a full replacement — that's what PUT is for. Most developers misuse PUT when they mean PATCH.
+            </div>
+
+            <h3>● Idempotent vs Non-Idempotent</h3>
+            <p>
+              An <em>idempotent</em> method can be called multiple times and always produces the same result.
+            </p>
+            <ul>
+              <li><strong>Idempotent</strong> — GET, PUT, DELETE</li>
+              <li><strong>Non-Idempotent</strong> — POST (calling POST twice creates two resources)</li>
+            </ul>
+          </section>
+
+          <!-- 6. CORS -->
+          <section id="cors">
+            <h2>CORS &amp; the OPTIONS Method</h2>
+            <p>
+              Browsers enforce the <strong>Same-Origin Policy</strong> — by default, a web page can only make requests to its own domain. CORS (Cross-Origin Resource Sharing) is the mechanism that lets servers selectively allow cross-origin requests.
+            </p>
+
+            <h3>● Simple Request Flow</h3>
+            <ul>
+              <li>Client sends request; browser automatically adds <em>Origin</em> header</li>
+              <li>Server checks the origin against its CORS policy</li>
+              <li>If allowed, server returns <em>Access-Control-Allow-Origin</em> header with the client's domain or <em>*</em></li>
+              <li>Browser checks for that header — if present and valid, lets the response through</li>
+              <li>If the header is absent, browser <strong>blocks</strong> the response and throws a CORS error</li>
+            </ul>
+
+            <h3>● Pre-flight Request Flow</h3>
+            <p>
+              A request becomes a <strong>pre-flight</strong> request (requiring an extra OPTIONS call first) if <em>any</em> of these conditions are met:
+            </p>
+            <ul>
+              <li>Method is <strong>not</strong> GET, POST, or HEAD — e.g. PUT, DELETE</li>
+              <li>Request includes <strong>non-simple headers</strong> — e.g. <em>Authorization</em>, custom headers</li>
+              <li>Content-Type is <strong>application/json</strong> (not form-urlencoded, multipart, or text/plain)</li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Reality Check</span>
+              Since most apps send JSON with Authorization headers, nearly <strong>all real-world requests</strong> trigger pre-flight. You'll see OPTIONS requests constantly in your network tab.
+            </div>
+
+            <h3>● OPTIONS Pre-flight Response Headers</h3>
+            <ul>
+              <li><strong>Access-Control-Allow-Origin</strong> — which origins are allowed</li>
+              <li><strong>Access-Control-Allow-Methods</strong> — which HTTP methods are allowed</li>
+              <li><strong>Access-Control-Allow-Headers</strong> — which non-simple headers are allowed</li>
+              <li><strong>Access-Control-Max-Age</strong> — how long (seconds) the browser can cache this pre-flight response before asking again; reduces repeated OPTIONS calls</li>
+            </ul>
+          </section>
+
+          <!-- 7. Response Status Codes -->
+          <section id="status-codes">
+            <h2>Response Status Codes</h2>
+            <p>
+              Status codes communicate the <strong>result of a request</strong> in a standardised way — without needing to inspect the body or guess from the response shape.
+            </p>
+
+            <h3>● 2xx — Success</h3>
+            <ul>
+              <li><strong>200 OK</strong> — request succeeded</li>
+              <li><strong>201 Created</strong> — resource successfully created (POST)</li>
+              <li><strong>204 No Content</strong> — success, but no body to return (common for pre-flight and DELETE)</li>
+            </ul>
+
+            <h3>● 3xx — Redirection</h3>
+            <ul>
+              <li><strong>301 Moved Permanently</strong> — resource has a new permanent URL</li>
+              <li><strong>302 Found</strong> — temporary redirect</li>
+              <li><strong>304 Not Modified</strong> — cached version is still valid; don't re-download</li>
+            </ul>
+
+            <h3>● 4xx — Client Errors</h3>
+            <ul>
+              <li><strong>400 Bad Request</strong> — malformed request or invalid input</li>
+              <li><strong>401 Unauthorized</strong> — not authenticated; client must log in</li>
+              <li><strong>403 Forbidden</strong> — authenticated but not authorised</li>
+              <li><strong>404 Not Found</strong> — resource doesn't exist</li>
+              <li><strong>409 Conflict</strong> — state conflict; e.g. duplicate email on registration</li>
+              <li><strong>422 Unprocessable Entity</strong> — semantically invalid input (correct format, wrong values)</li>
+              <li><strong>429 Too Many Requests</strong> — rate limited</li>
+            </ul>
+
+            <h3>● 5xx — Server Errors</h3>
+            <ul>
+              <li><strong>500 Internal Server Error</strong> — generic unhandled server crash</li>
+              <li><strong>502 Bad Gateway</strong> — upstream server returned invalid response</li>
+              <li><strong>503 Service Unavailable</strong> — server overloaded or down for maintenance</li>
+            </ul>
+          </section>
+
+          <!-- 8. HTTP Caching -->
+          <section id="http-caching">
+            <h2>HTTP Caching</h2>
+            <p>
+              Caching reduces unnecessary network round-trips by letting clients reuse previously fetched resources. The server controls caching behaviour via response headers.
+            </p>
+
+            <h3>● Key Caching Headers</h3>
+            <ul>
+              <li><strong>Cache-Control: max-age=N</strong> — cache this response for N seconds</li>
+              <li><strong>Cache-Control: no-cache</strong> — always revalidate with the server before using cache</li>
+              <li><strong>Cache-Control: no-store</strong> — never cache; used for sensitive data</li>
+              <li><strong>ETag</strong> — a unique fingerprint (hash) of the resource version</li>
+              <li><strong>If-None-Match</strong> — client sends its cached ETag; server returns <em>304</em> if unchanged, else returns fresh resource</li>
+              <li><strong>Expires</strong> — older alternative to max-age; gives an absolute expiry date</li>
+            </ul>
+          </section>
+
+          <!-- 9. Content Negotiation -->
+          <section id="content-negotiation">
+            <h2>Content Negotiation</h2>
+            <p>
+              Content negotiation lets the client tell the server <strong>what format it wants</strong>, and the server responds accordingly — same endpoint, different representations.
+            </p>
+            <ul>
+              <li><strong>Accept</strong> — desired response format; e.g. <em>application/json</em>, <em>text/html</em></li>
+              <li><strong>Accept-Language</strong> — preferred language; e.g. <em>en-US</em></li>
+              <li><strong>Accept-Encoding</strong> — supported compression formats; e.g. <em>gzip, br</em></li>
+              <li>Server picks the best match and reflects it in the <em>Content-Type</em> response header</li>
+            </ul>
+          </section>
+
+          <!-- 10. Compression, Persistent Connections, Multipart -->
+          <section id="advanced-http">
+            <h2>Advanced HTTP Concepts</h2>
+
+            <h3>● Compression</h3>
+            <ul>
+              <li>Server compresses the response body before sending it</li>
+              <li><strong>gzip</strong> — most widely supported</li>
+              <li><strong>deflate</strong> — older, less common</li>
+              <li><strong>Brotli (br)</strong> — newer, better compression ratios than gzip</li>
+              <li>Client advertises support via <em>Accept-Encoding</em>; server confirms via <em>Content-Encoding</em></li>
+            </ul>
+
+            <h3>● Persistent Connections &amp; Keep-Alive</h3>
+            <ul>
+              <li>HTTP/1.1 default — TCP connection stays open after a response</li>
+              <li>Subsequent requests reuse the same connection — no re-handshake overhead</li>
+              <li>Controlled via <em>Connection: keep-alive</em> or <em>Connection: close</em> header</li>
+            </ul>
+
+            <h3>● Multipart Data &amp; Chunked Transfer</h3>
+            <ul>
+              <li><strong>Multipart</strong> — used for file uploads; bundles multiple data types (file + form fields) in one request body, separated by a boundary string</li>
+              <li><strong>Chunked Transfer Encoding</strong> — server sends response in chunks without knowing total size upfront; useful for streaming large responses</li>
+            </ul>
+          </section>
+
+          <!-- 11. SSL / TLS / HTTPS -->
+          <section id="ssl-tls">
+            <h2>SSL / TLS / HTTPS</h2>
+            <p>
+              HTTPS is HTTP with an <strong>encryption layer</strong> on top. For all practical backend purposes, HTTP and HTTPS follow the same principles — HTTPS just adds security via TLS.
+            </p>
+            <ul>
+              <li><strong>TLS (Transport Layer Security)</strong> — encrypts data in transit so it can't be read by intermediaries</li>
+              <li><strong>SSL</strong> — the older predecessor to TLS; the terms are used interchangeably though SSL is deprecated</li>
+              <li><strong>Certificate</strong> — proves the server's identity; issued by a Certificate Authority (CA)</li>
+              <li><strong>HSTS</strong> — <em>HTTP Strict Transport Security</em>; forces the browser to always use HTTPS for a domain, preventing protocol downgrade attacks</li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">OSI Note</span>
+              TLS handshakes and certificate validation live at the network layer — they're important context but border into network engineering territory. As a backend dev, you mostly configure this once via Nginx + Certbot and forget about it.
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+
+    <!-- ── Status Bar ── -->
+    <footer class="statusbar">
+      <div class="statusbar-item">
+        <span class="dot"></span>
+        Backend Engineering
+      </div>
+      <div class="statusbar-item">11 topics</div>
+      <div class="statusbar-spacer"></div>
+      <div class="statusbar-item" id="statusTheme">Light Mode</div>
+      <div class="statusbar-item" id="statusTime">00:00</div>
+    </footer>
+
+    <!-- ── Scripts ── -->
+    <script>const CURRENT_LECTURE = "http-deep-dive";</script>
+    <script src="script.js"></script>
+    <script src="sidebar.js"></script>
+  </body>
+</html>

@@ -1,390 +1,233 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>What is a Backend — My Study Hub</title>
+    <title>Lec 2 — What is a Backend?</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- ══ TOP BAR ══ -->
-    <header class="topbar" role="banner">
-      <div class="topbar-dots" aria-hidden="true">
+    <!-- ── Top Bar ── -->
+    <header class="topbar">
+      <button class="topbar-menu-btn" id="menuBtn" aria-expanded="true" aria-label="Toggle sidebar">
+        ☰ Menu
+      </button>
+      <div class="topbar-divider"></div>
+      <div class="topbar-dots">
         <span></span><span></span><span></span>
       </div>
-      <button class="topbar-menu-btn" id="menuBtn" aria-label="Toggle sidebar" aria-expanded="false">☰ Menu</button>
-      <div class="topbar-divider" aria-hidden="true"></div>
-      <div class="topbar-title"><span>◈</span> Study<span>.</span>Notes</div>
-      <nav class="topbar-breadcrumb" aria-label="Breadcrumb">
-        <span>Home</span>
-        <span class="sep">▸</span>
-        <span>Backend</span>
-        <span class="sep">▸</span>
-        <span class="current" id="breadcrumbCurrent">What is a Backend?</span>
-      </nav>
-      <button class="topbar-theme-btn" id="themeBtn" aria-label="Toggle light/dark mode">☀ Light</button>
+      <div class="topbar-title">Backend<span>Engineering</span></div>
+      <div class="topbar-breadcrumb">
+        <span>Lec 2</span>
+        <span class="sep">›</span>
+        <span class="current" id="breadcrumbCurrent">Overview</span>
+      </div>
+      <button class="topbar-theme-btn" id="themeBtn">☀ Light</button>
     </header>
 
-    <!-- ══ SIDEBAR OVERLAY (mobile) ══ -->
-    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
-
-    <!-- ══ LAYOUT ══ -->
+    <!-- ── Layout ── -->
     <div class="layout">
-      <!-- ── SIDEBAR ── -->
-      <nav class="sidebar" id="sidebar" aria-label="Topics navigation">
-        <div class="sidebar-section-label">Lectures</div>
+      <!-- ── Sidebar ── -->
+      <nav class="sidebar" id="sidebar" aria-label="Course navigation"></nav>
+      <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
 
-        <!-- ══ LECTURE 1 ══ -->
-        <div class="nav-lecture nav-lecture--soon">
-          <div class="nav-lecture-title">
-            <span class="nav-arrow">▸</span>
-            <span>Lec 1 · Roadmap <em class="soon-tag">lec1</em></span>
-          </div>
-        </div>
-
-        <!-- ══ LECTURE 2 ══ -->
-        <div class="nav-lecture" id="lecture-2">
-          <div class="nav-lecture-title">
-            <span class="nav-arrow">▸</span>
-            <span>Lec 2 · What is a Backend?</span>
-          </div>
-          <div class="nav-lecture-body">
-
-            <div class="nav-group">
-              <div class="nav-group-title"><span class="nav-arrow">▸</span> Intro</div>
-              <ul class="nav-links">
-                <li class="active"><a href="#what-is-backend" data-label="What is a Backend?">What is a Backend?</a></li>
-                <li><a href="#how-backends-work" data-label="How Backends Work">How Backends Work</a></li>
-              </ul>
-            </div>
-
-            <div class="nav-group">
-              <div class="nav-group-title"><span class="nav-arrow">▸</span> Request Flow</div>
-              <ul class="nav-links">
-                <li><a href="#dns" data-label="DNS Resolution">DNS Resolution</a></li>
-                <li><a href="#firewall" data-label="Firewall & Ports">Firewall & Ports</a></li>
-                <li><a href="#reverse-proxy" data-label="Reverse Proxy">Reverse Proxy (Nginx)</a></li>
-                <li><a href="#full-flow" data-label="Full Request Flow">Full Request Flow</a></li>
-              </ul>
-            </div>
-
-            <div class="nav-group">
-              <div class="nav-group-title"><span class="nav-arrow">▸</span> Why Backends</div>
-              <ul class="nav-links">
-                <li><a href="#why-backends" data-label="Why Do We Need Backends?">Why Do We Need Backends?</a></li>
-                <li><a href="#how-frontends-work" data-label="How Frontends Work">How Frontends Work</a></li>
-                <li><a href="#why-not-frontend" data-label="Why Not Frontend Logic?">Why Not Frontend Logic?</a></li>
-              </ul>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- ══ FUTURE LECTURES ══ -->
-        <div class="nav-lecture nav-lecture--soon">
-          <div class="nav-lecture-title">
-            <span class="nav-arrow">▸</span>
-            <span>Lecture 3 <em class="soon-tag">soon</em></span>
-          </div>
-        </div>
-
-        <div class="sidebar-footer">v1.0 · backend notes</div>
-      </nav>
-
-      <!-- ── MAIN CONTENT ── -->
-      <main class="content-wrapper" id="main">
+      <!-- ── Main Content ── -->
+      <main class="content-wrapper">
         <div class="content">
 
           <!-- Topic Header -->
           <div class="topic-header">
-            <span class="tag">Lecture 02</span>
-            <h1>What is a Backend, How Do They Work & Why Do We Need Them?</h1>
-            <p class="subtitle">Series by Sriniously · Video 3 of playlist · Last updated: May 2026</p>
+            <div class="tag">Lecture 2</div>
+            <h1>What is a Backend, How Do They Work &amp; Why Do We Need Them?</h1>
+            <p class="subtitle">A holistic, ground-up view of backend systems — from DNS hops to browser sandboxes.</p>
           </div>
 
-          <!-- ── What is a Backend ── -->
+          <!-- 1. What is a Backend? -->
           <section id="what-is-backend">
             <h2>What is a Backend?</h2>
-            <p>In its traditional definition, a backend is a <strong>computer which is listening for HTTP, WebSocket, gRPC, or any other kind of request</strong> through an open port (e.g. port 80 or port 443), accessible over the internet so that clients or other frontends can connect to it.</p>
-
-            <h3>What a Server Does</h3>
-            <ul>
-              <li><strong>Serves content</strong> — static files like images, JavaScript, HTML files</li>
-              <li><strong>Serves data</strong> — JSON responses from API endpoints</li>
-              <li><strong>Accepts data</strong> — receives and processes what clients send to it</li>
-            </ul>
-
+            <p>
+              A backend, in its traditional definition, is a <strong>computer listening for requests</strong> — HTTP, WebSocket, gRPC, or any other protocol — through an open port accessible over the internet, so that clients or frontends can connect to it, send data, or receive data.
+            </p>
+            <p>
+              We call it a <em>server</em> because it <strong>serves content</strong>. That content can be static files like HTML, CSS, JavaScript, or images — or dynamic data like JSON. It also accepts incoming data from clients.
+            </p>
             <div class="callout">
-              <span class="callout-label">Definition</span>
-              <span>We call it a <em>server</em> because it <strong>provides</strong> or <strong>serves</strong> some kind of content — whether static files or dynamic data.</span>
-            </div>
-
-            <h3>Key Characteristics</h3>
-            <ul>
-              <li>Listens on an <strong>open port</strong> that is accessible over the internet</li>
-              <li>Can serve <strong>any client</strong> — browsers, mobile apps, other servers</li>
-              <li>The goal is to get a holistic, physical view of how backend components actually work behind the scenes</li>
-            </ul>
-          </section>
-
-          <!-- ── How Backends Work ── -->
-          <section id="how-backends-work">
-            <h2>How Backends Work</h2>
-            <p>To understand how a backend works in practice, trace a real request from a browser all the way to the server. Every step in the journey has a distinct component with a distinct role.</p>
-
-            <div class="tier-grid">
-              <div class="tier-card">
-                <h3>● Client</h3>
-                <p>The browser or app initiating the request to a domain name.</p>
-                <div class="example">e.g. browser hits backend-demo.xyz</div>
-              </div>
-              <div class="tier-card">
-                <h3>● Network Hops</h3>
-                <p>DNS → Firewall → Reverse Proxy → Server Process</p>
-                <div class="example">Each hop has a specific responsibility</div>
-              </div>
-              <div class="tier-card">
-                <h3>● Server Process</h3>
-                <p>The actual runtime (e.g. Node.js) running on localhost on a port.</p>
-                <div class="example">e.g. localhost:3001</div>
-              </div>
+              <span class="callout-label">Core Idea</span>
+              A backend is a centralized computer that holds state and data for all users — serving and persisting information on their behalf.
             </div>
           </section>
 
-          <!-- ── DNS ── -->
-          <section id="dns">
-            <h2>DNS Resolution</h2>
-            <p>The first stop after the browser sends a request to a domain name is the <strong>DNS server</strong>. DNS translates a human-readable domain name into an IP address that points to the actual machine.</p>
+          <!-- 2. How a Request Travels -->
+          <section id="request-flow">
+            <h2>How a Request Travels</h2>
+            <p>
+              When you type a URL into a browser, your request doesn't magically appear at the server. It takes a specific journey through several hops before it reaches your backend code.
+            </p>
 
-            <h3>DNS Record Types</h3>
+            <h3>● Step-by-Step Flow</h3>
             <ul>
-              <li><strong>A Record</strong> — Maps a domain/subdomain directly to an <em>IP address</em></li>
-              <li><strong>CNAME Record</strong> — Maps a domain/subdomain to another <em>domain name</em> (alias)</li>
-            </ul>
-
-            <h3>Example Flow</h3>
-            <ul>
-              <li>Subdomain <em>backend-demo.xyz</em> has an <strong>A record</strong> pointing to the public IP of an EC2 instance</li>
-              <li>Browser resolves the domain → gets the IP → sends the request to that IP</li>
-              <li>Different subdomains can point to different IPs or services</li>
-            </ul>
-
-            <div class="callout">
-              <span class="callout-label">Note</span>
-              <span>DNS is a huge topic in itself. The key takeaway here is: <em>domain → IP</em> via A record. That IP is where your server lives.</span>
-            </div>
-          </section>
-
-          <!-- ── Firewall ── -->
-          <section id="firewall">
-            <h2>Firewall & Ports</h2>
-            <p>Before a request reaches the server process, it passes through a <strong>firewall</strong>. On AWS, this is implemented via <em>Security Groups</em>. The firewall controls which ports are accessible from the internet.</p>
-
-            <h3>Common Ports</h3>
-            <ul>
-              <li><strong>Port 22</strong> — SSH access to the instance (for terminal/admin operations)</li>
-              <li><strong>Port 80</strong> — HTTP traffic</li>
-              <li><strong>Port 443</strong> — HTTPS traffic</li>
-            </ul>
-
-            <h3>Why This Matters</h3>
-            <ul>
-              <li>If ports 80 or 443 are not allowed in the security group, the request is <strong>blocked at the firewall</strong> and never reaches the server</li>
-              <li>Security groups define exactly what traffic is permitted — everything else is denied by default</li>
-              <li>This is the first line of defence for a backend server on cloud infrastructure</li>
-            </ul>
-          </section>
-
-          <!-- ── Reverse Proxy ── -->
-          <section id="reverse-proxy">
-            <h2>Reverse Proxy (Nginx)</h2>
-            <p>After passing through the firewall, the request reaches a <strong>reverse proxy</strong>. A reverse proxy is a server that sits in front of other servers and manages redirects and configs from a centralised place — so you don't have to change config on every individual server.</p>
-
-            <h3>What Nginx Does in This Example</h3>
-            <ul>
-              <li>Listens on <strong>Port 80</strong> (HTTP) and redirects to <strong>Port 443</strong> (HTTPS) — handled automatically by Certbot/SSL</li>
-              <li>Reads the <strong>server_name</strong> field to identify which domain is being requested</li>
-              <li>Forwards (proxies) that request to the actual Node.js server running on <em>localhost:3001</em></li>
-            </ul>
-
-            <h3>Key Nginx Concepts</h3>
-            <ul>
-              <li><strong>server_name</strong> — Identifies the domain/subdomain this config block applies to</li>
-              <li><strong>proxy_pass</strong> — Where to forward the matched request (e.g. localhost:3001)</li>
-              <li><strong>Certbot / sbot</strong> — Tool used to automatically assign SSL certificates (handles the 80→443 redirect)</li>
-              <li><strong>Multiple servers</strong> — One Nginx instance can route traffic to multiple backend services (e.g. frontend on :3000, backend on :3001)</li>
-            </ul>
-
-            <div class="callout">
-              <span class="callout-label">Why Reverse Proxy?</span>
-              <span>Instead of exposing your Node.js server directly, Nginx sits in front — handling SSL termination, routing, and load balancing from one place.</span>
-            </div>
-
-            <h3>Process Management</h3>
-            <ul>
-              <li><strong>PM2</strong> — Used to manage running processes on the server (e.g. <em>pm2 list</em> shows all running processes)</li>
-              <li>In the demo: one PM2 process for the frontend (port 3000), one for the backend (port 3001)</li>
-              <li>PM2 keeps processes alive after server restarts and provides process monitoring</li>
-            </ul>
-          </section>
-
-          <!-- ── Full Request Flow ── -->
-          <section id="full-flow">
-            <h2>Full Request Flow — End to End</h2>
-            <p>Putting it all together — here is the complete journey of a single HTTP request from browser to backend:</p>
-
-            <ul>
-              <li><strong>1. Browser</strong> — User navigates to <em>backend-demo.xyz</em></li>
-              <li><strong>2. DNS Server</strong> — Resolves the domain name to the EC2 instance's public IP</li>
-              <li><strong>3. AWS / Cloud Infrastructure</strong> — Request is routed to the correct AWS region and instance</li>
-              <li><strong>4. Firewall (Security Group)</strong> — Checks if port 443 (or 80) is allowed; if not, request is blocked here</li>
-              <li><strong>5. EC2 Instance</strong> — Request arrives at the physical (virtual) machine</li>
-              <li><strong>6. Nginx (Reverse Proxy)</strong> — Matches the domain, redirects HTTP→HTTPS, forwards to localhost:3001</li>
-              <li><strong>7. Node.js Server</strong> — The actual server process handles the request and returns a response</li>
+              <li><strong>Browser</strong> — initiates the request with a domain name</li>
+              <li><strong>DNS Server</strong> — resolves the domain to an IP address via A records or CNAME records</li>
+              <li><strong>Firewall (e.g. AWS Security Group)</strong> — checks if the request's port is allowed; blocks if not. Port <em>443</em> for HTTPS, <em>80</em> for HTTP must be explicitly permitted</li>
+              <li><strong>EC2 / Server Instance</strong> — the physical or virtual machine your backend lives on</li>
+              <li><strong>Reverse Proxy (e.g. Nginx)</strong> — sits in front of your server, manages redirects and SSL certificates, and forwards traffic to your app's local port (e.g. <em>localhost:3001</em>)</li>
+              <li><strong>Your App Server</strong> — the final hop; Node.js, Go, or whatever is actually running your backend logic</li>
             </ul>
 
             <div class="callout">
               <span class="callout-label">Local Dev</span>
-              <span>When developing locally, you skip DNS, firewall, and Nginx entirely — you just hit <em>localhost:3000/users</em> directly. The server logic is identical.</span>
+              When developing locally, you skip DNS, firewall, and reverse proxy entirely — you just go straight to <em>localhost:3000</em>. Same server logic, fewer hops.
             </div>
+
+            <h3>● DNS in Brief</h3>
+            <ul>
+              <li><strong>A Record</strong> — maps a domain/subdomain directly to an IP address</li>
+              <li><strong>CNAME Record</strong> — maps a subdomain to another domain name</li>
+            </ul>
+
+            <h3>● Reverse Proxy (Nginx)</h3>
+            <ul>
+              <li>Sits in front of one or more backend servers</li>
+              <li>Handles <strong>SSL termination</strong> — manages HTTPS certificates (e.g. via Certbot)</li>
+              <li>Redirects port 80 → 443 automatically</li>
+              <li>Routes incoming requests to the correct local port based on <em>server_name</em> config</li>
+              <li>Centralises config — you change one place instead of every individual server</li>
+            </ul>
           </section>
 
-          <!-- ── Why Do We Need Backends ── -->
+          <!-- 3. Why Do We Need Backends? -->
           <section id="why-backends">
             <h2>Why Do We Need Backends?</h2>
-            <p>If you strip down the responsibility of a backend to a single word, it is: <strong>data</strong>. The need to <em>fetch</em> data, <em>receive</em> data, and <em>persist</em> data — and every action that deals with data.</p>
+            <p>
+              Strip everything down to its core and the purpose of a backend is one word: <strong>data</strong>. The need to fetch data, receive data, and persist data — and every action that deals with that data.
+            </p>
 
-            <h3>Real-World Example — Instagram Like</h3>
+            <h3>● The Instagram Like Example</h3>
             <ul>
-              <li>User clicks the like button on a post</li>
-              <li>App sends a request to the backend server</li>
-              <li>Server identifies <strong>who</strong> performed the action (authenticated user)</li>
-              <li>Server <strong>persists</strong> the like action in the database</li>
-              <li>Server identifies <strong>whose</strong> post was liked</li>
-              <li>Server triggers a <strong>notification</strong> to that user</li>
-              <li>Friend receives the push notification on their device</li>
+              <li>You tap <em>like</em> on a post</li>
+              <li>The app sends a request to the backend server</li>
+              <li>The server identifies who you are (your user ID)</li>
+              <li>It <strong>persists</strong> the like action in a database</li>
+              <li>It identifies the post owner and <strong>triggers a notification</strong></li>
+              <li>The post owner receives a notification on their device</li>
             </ul>
+            <p>
+              All of this requires a <strong>centralized</strong> computer that knows the state of all users simultaneously. Your phone only knows about you — the server knows about everyone.
+            </p>
 
             <div class="callout">
               <span class="callout-label">Key Insight</span>
-              <span>All of this — from click to notification — requires a <em>centralised computer</em> that knows the state of all users, all posts, all interactions. That centralised computer is the backend.</span>
+              A backend is necessary any time you need to share state between multiple users or devices. Your frontend knows nothing about other users — the server knows everything.
             </div>
-
-            <h3>Why Centralisation is Necessary</h3>
-            <ul>
-              <li>Each user's app is customised to their profile and the accounts they follow</li>
-              <li>Notifications must be routed to the <strong>correct</strong> user — not everyone</li>
-              <li>A centralised server holds <strong>global state</strong> — data about all users, all actions</li>
-              <li>Without a central server, there is no way to coordinate interactions between users on different devices</li>
-            </ul>
           </section>
 
-          <!-- ── How Frontends Work ── -->
+          <!-- 4. How Frontends Work -->
           <section id="how-frontends-work">
             <h2>How Frontends Work</h2>
-            <p>To understand why backend logic cannot live in the frontend, you first need to understand how frontends actually execute code.</p>
+            <p>
+              A frontend server — like a Next.js app — follows the same DNS → firewall → Nginx journey. But what it serves is fundamentally different. Instead of processing logic and returning data, it returns <strong>files</strong>: HTML, CSS, JavaScript, fonts, images.
+            </p>
 
-            <h3>Frontend Request Flow (e.g. Next.js App)</h3>
+            <h3>● Browser Rendering Flow</h3>
             <ul>
-              <li>Browser navigates to <em>frontend-demo.xyz</em></li>
-              <li>DNS resolves domain → EC2 IP (same flow as backend)</li>
-              <li>Nginx forwards to <strong>localhost:3000</strong> (the Next.js dev/prod server)</li>
-              <li>Browser receives the <strong>primary HTML file</strong> first</li>
-              <li>Browser then fetches all linked resources: <em>JS files, CSS files, fonts, images</em> — each as a separate request</li>
-            </ul>
-
-            <h3>How the Browser Renders a Frontend</h3>
-            <ul>
-              <li><strong>CSS files fetched</strong> → browser paints the visual styles (backgrounds, fonts, button styles)</li>
-              <li><strong>JS files fetched</strong> → browser <em>hydrates</em> the page — attaches all event listeners to buttons and interactive elements</li>
-              <li>Only after hydration do buttons and interactions actually work</li>
-            </ul>
-
-            <h3>The Key Difference from Backends</h3>
-            <ul>
-              <li><strong>Backend</strong> — server receives request, processes it, sends back the result. Processing happens <em>on the server</em></li>
-              <li><strong>Frontend</strong> — server sends the <em>code</em> to the browser, and the <em>browser</em> runs the code. Processing happens on the <em>client's machine</em></li>
-              <li>The <strong>browser is the runtime</strong> for frontend code — not a server</li>
+              <li>Browser fetches the primary <strong>HTML file</strong></li>
+              <li>HTML references CSS, JS, fonts and images — each fetched in separate requests</li>
+              <li>CSS is parsed → browser <strong>paints</strong> the visual layout</li>
+              <li>JavaScript is fetched → browser <strong>hydrates</strong> event listeners and interactivity</li>
+              <li>Only now does the page become fully functional</li>
             </ul>
 
             <div class="callout">
-              <span class="callout-label">Runtime</span>
-              <span>Backend: server is the runtime. Frontend: <em>browser</em> is the runtime. This is the fundamental architectural difference.</span>
+              <span class="callout-label">Key Difference</span>
+              Backend: server runs the code, sends you the <em>result</em>. Frontend: server sends you the <em>code</em>, your browser runs it.
             </div>
-
-            <h3>Browser Sandbox Environment</h3>
-            <ul>
-              <li>Browser runtimes are <strong>sandboxed</strong> — isolated from the OS, processes, and file system</li>
-              <li>Code can only access: the <em>DOM</em>, <em>browser APIs</em> (localStorage, cookies), and <em>external APIs</em> — but only if those APIs have the correct CORS headers</li>
-              <li>This isolation exists because browsers fetch code from <em>remote servers</em> and execute it on the user's machine — without isolation, malicious code could access files and steal data</li>
-            </ul>
           </section>
 
-          <!-- ── Why Not Frontend Logic ── -->
+          <!-- 5. Why Not Write Backend Logic in the Frontend? -->
           <section id="why-not-frontend">
-            <h2>Why Can't We Write Backend Logic in Frontends?</h2>
-            <p>Even if it were technically possible to run all server logic in the browser, here is why it is a fundamentally bad idea — four concrete reasons:</p>
+            <h2>Why Not Write Backend Logic in the Frontend?</h2>
+            <p>
+              Since the browser is also a runtime environment, could we just connect directly to databases and run all logic client-side? Short answer: no. Here's why.
+            </p>
 
-            <h3>1. Security Restrictions</h3>
-            <ul>
-              <li>Browser security policies are extremely restrictive by design</li>
-              <li>Backends often need to access the <strong>underlying file system</strong> — e.g. writing log files, reading environment variables</li>
-              <li>Browsers <strong>do not allow</strong> file system access — this is a hard blocker</li>
-              <li>Secret keys, API tokens, and credentials cannot be safely stored in the browser — they would be exposed to the user</li>
-            </ul>
+            <div class="tier-grid">
+              <div class="tier-card">
+                <h3>🔒 Security</h3>
+                <p>Browsers are sandboxed — isolated from the OS, file system, and environment variables. Backend logic often needs to read log files, access secrets, and connect to internal services. Browsers are deliberately prevented from doing this.</p>
+                <div class="example">e.g. You can't read /etc/secrets from a browser tab</div>
+              </div>
+              <div class="tier-card">
+                <h3>🌐 CORS Restrictions</h3>
+                <p>Browsers enforce CORS policy — JavaScript can only call APIs on the <em>same domain</em> unless the external API explicitly allows it via headers. Backend servers have no such restriction and can freely connect to any external service.</p>
+                <div class="example">e.g. Calling a payment API or sending an email from frontend = blocked</div>
+              </div>
+              <div class="tier-card">
+                <h3>🗄️ Database Access</h3>
+                <p>Native database drivers (pg, mongodb, mysql2) are built for environments that can manage socket connections, binary data, and <strong>connection pools</strong>. Browsers cannot maintain persistent DB connections.</p>
+                <div class="example">e.g. If every browser opened its own DB connection, the DB would be overwhelmed instantly</div>
+              </div>
+            </div>
 
-            <h3>2. CORS & External API Restrictions</h3>
-            <ul>
-              <li>Browsers enforce <strong>CORS (Cross-Origin Resource Sharing)</strong> — a security policy that restricts JS code from calling APIs on a different domain</li>
-              <li>A frontend app at <em>frontend-demo.xyz</em> can only freely call APIs on the <em>same domain</em></li>
-              <li>Calling any other domain is blocked by the browser unless that API explicitly allows it via CORS headers</li>
-              <li>Backend servers need to connect to <strong>many external services</strong> — databases, third-party APIs, payment gateways — without this restriction</li>
-            </ul>
+            <h3>● Connection Pooling</h3>
+            <p>
+              Backend servers maintain a <strong>pool of reusable database connections</strong> rather than creating and destroying a connection per request. This is critical because backends receive thousands of requests per second — establishing a new DB connection for each one would overwhelm and crash the database server.
+            </p>
 
-            <h3>3. Database Access</h3>
+            <h3>● Computing Power</h3>
             <ul>
-              <li>Servers use <strong>native database drivers</strong> (e.g. <em>pg</em> for PostgreSQL, <em>mongodb</em> for MongoDB) which require socket connections, binary data handling, and persistent connections</li>
-              <li>Browsers are <strong>not designed</strong> to maintain persistent connections to databases</li>
-              <li>Backend servers use <strong>connection pooling</strong> — a maintained list of reusable DB connections — because creating and destroying a connection per request would overwhelm the database</li>
-              <li>If each browser client connected directly to the DB, the database would be overwhelmed with thousands of simultaneous direct connections — with no pooling or management layer</li>
-              <li>There is no practical way to implement connection pooling or efficient query execution from browser environments</li>
-            </ul>
-
-            <h3>4. Computing Power</h3>
-            <ul>
-              <li>Frontend apps run on <strong>all kinds of devices</strong> — smartphones, low-end laptops, devices with 256MB RAM and a single-core CPU</li>
-              <li>Heavy business logic would <strong>lag and break</strong> on underpowered devices</li>
-              <li>A centralised backend server can be <strong>scaled vertically or horizontally</strong> as needed — you can add more CPU and RAM to handle load</li>
-              <li>Users don't have to bear the computational cost of the application's logic</li>
+              <li>Client devices vary wildly — from a flagship laptop to a 256 MB RAM smartphone</li>
+              <li>Running heavy business logic on the client means <strong>inconsistent performance</strong> for users</li>
+              <li>A centralized backend server can be scaled up (more CPU/RAM) or out (more instances) independently of client hardware</li>
             </ul>
 
             <div class="callout">
-              <span class="callout-label">Summary</span>
-              <span>Security · CORS · Database Drivers · Computing Power — four reasons why backend logic must live on a server, not in the browser. And that assumes it could even run there in the first place.</span>
+              <span class="callout-label">Browser Sandbox</span>
+              Browsers intentionally restrict what code can do. A browser fetches code from a remote server and executes it — if that sandbox didn't exist, any website you visit could read your entire file system and exfiltrate your data.
+            </div>
+          </section>
+
+          <!-- 6. Summary Map -->
+          <section id="mental-model">
+            <h2>Mental Model</h2>
+            <p>
+              Think of backend systems in layers. Each layer has exactly one job, and understanding that separation is the foundation of everything that follows in this course.
+            </p>
+            <ul>
+              <li><strong>Presentation Layer</strong> — accepts requests, sends responses (your routes and controllers)</li>
+              <li><strong>Business Logic Layer</strong> — the core rules of your application (your services)</li>
+              <li><strong>Data Access Layer</strong> — communicates with the database (your models/repositories)</li>
+            </ul>
+            <div class="callout">
+              <span class="callout-label">Next Up</span>
+              Now that you understand what a backend is and why it exists, the series dives into each backend concept from first principles — starting with HTTP.
             </div>
           </section>
 
         </div>
-        <!-- /content -->
       </main>
     </div>
-    <!-- /layout -->
 
-    <!-- ══ STATUS BAR ══ -->
-    <footer class="statusbar" aria-label="Status bar">
+    <!-- ── Status Bar ── -->
+    <footer class="statusbar">
       <div class="statusbar-item">
         <span class="dot"></span>
-        <span>Study.Notes</span>
+        Backend Engineering
       </div>
-      <div class="statusbar-item">Lecture 2 · What is a Backend?</div>
+      <div class="statusbar-item">6 topics</div>
       <div class="statusbar-spacer"></div>
       <div class="statusbar-item" id="statusTheme">Light Mode</div>
-      <div class="statusbar-item" id="statusTime"></div>
+      <div class="statusbar-item" id="statusTime">00:00</div>
     </footer>
 
+    <!-- ── Scripts ── -->
+    <script>const CURRENT_LECTURE = "what-is-backend";</script>
+    <script src="sidebar.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
